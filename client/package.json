@@ -1,0 +1,9 @@
+{
+  "name": "mud-grid-client",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "client.js",
+  "scripts": {
+    "start": "node client.js"
+  }
+}
