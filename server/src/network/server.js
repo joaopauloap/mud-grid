@@ -3,6 +3,8 @@ import * as auth from "../auth/index.js";
 import { handleAuthLine } from "../auth/authFlow.js";
 import { handleCommand } from "../commands/index.js";
 import { createPlayer, players } from "../game/playerManager.js";
+import { loadPlayerLocation, startLocationSync } from "../game/locationManager.js";
+import { initWorld } from "../map/index.js";
 import { normalizeInput, write, sendLine, sendPrompt } from "./protocol.js";
 
 const PORT = 4000;
@@ -41,6 +43,8 @@ function processLine(player, input) {
 
 export async function startServer() {
   await auth.init();
+  await initWorld();
+  startLocationSync(players);
 
   const server = net.createServer(socket => {
     const id = nextId++;
@@ -71,7 +75,8 @@ export async function startServer() {
               sendPrompt,
               disconnectExistingUser,
               sendWelcome: async pl => await sendWelcome(pl),
-              broadcast
+              broadcast,
+              loadPlayerLocation
             });
             continue;
           } catch (err) {
@@ -80,7 +85,7 @@ export async function startServer() {
           }
         }
 
-        processLine(player, input);
+        await processLine(player, input);
       }
     });
 

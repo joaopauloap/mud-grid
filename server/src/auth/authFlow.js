@@ -1,11 +1,13 @@
 import * as auth from "./index.js";
+import { formatLocationMessage } from "../map/index.js";
+import { playersAtLocation } from "../game/locationManager.js";
 
 export async function initAuth() {
   await auth.init();
 }
 
 export async function handleAuthLine(player, input, callbacks) {
-  const { sendLine, sendPrompt, disconnectExistingUser, sendWelcome, broadcast } = callbacks;
+  const { sendLine, sendPrompt, disconnectExistingUser, sendWelcome, broadcast, loadPlayerLocation } = callbacks;
 
   if (player.stage === 'awaiting_username') {
     const username = input;
@@ -58,9 +60,10 @@ export async function handleAuthLine(player, input, callbacks) {
 
     player.authenticated = true;
     player.name = player.pendingUsername;
-
-    await sendWelcome(player);
     broadcast(`[Sistema]: ${player.name} entrou na Grade.\n`);
+    await loadPlayerLocation(player);
+    await sendWelcome(player);
+    await sendLocationStatus(player, sendLine);
     return;
   }
 
@@ -70,6 +73,7 @@ export async function handleAuthLine(player, input, callbacks) {
       await auth.createUser(player.pendingUsername, password);
       player.authenticated = true;
       player.name = player.pendingUsername;
+      await loadPlayerLocation(player);
 
       await sendWelcome(player);
       broadcast(`${player.name} entrou na Grade.\n`);
@@ -82,4 +86,19 @@ export async function handleAuthLine(player, input, callbacks) {
     }
     return;
   }
+}
+
+async function sendLocationStatus(player, sendLine) {
+  if (!player.location) {
+    sendLine(player.socket, `\nSua posição ainda não foi carregada.\r\n`);
+    return;
+  }
+
+  const locationText = formatLocationMessage(player.location);
+  const others = playersAtLocation(player.location, player.serverPlayers)
+    .filter(p => p.id !== player.id)
+    .map(p => p.name);
+
+  const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
+  sendLine(player.socket, `\n${locationText}\n${othersText}\r\n`);
 }

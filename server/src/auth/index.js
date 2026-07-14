@@ -37,6 +37,19 @@ export async function init() {
     value TEXT
   )`);
 
+  await run(`CREATE TABLE IF NOT EXISTS player_locations (
+    username TEXT PRIMARY KEY,
+    x INTEGER,
+    y INTEGER
+  )`);
+
+  await run(`CREATE TABLE IF NOT EXISTS world_descriptions (
+    x INTEGER,
+    y INTEGER,
+    description TEXT,
+    PRIMARY KEY(x,y)
+  )`);
+
   const motd = await get(`SELECT value FROM game_params WHERE key = ?`, ["motd"]);
   if (!motd) {
     await run(`INSERT INTO game_params (key, value) VALUES (?, ?)`, [
@@ -82,4 +95,40 @@ export async function userExists(username) {
 export async function getGameParam(key) {
   const row = await get(`SELECT value FROM game_params WHERE key = ?`, [key]);
   return row ? row.value : null;
+}
+
+export async function getLocation(username) {
+  const row = await get(`SELECT x, y FROM player_locations WHERE username = ?`, [username]);
+  return row;
+}
+
+export async function savePlayerLocation(username, location) {
+  await run(`INSERT INTO player_locations (username, x, y) VALUES (?, ?, ?)
+    ON CONFLICT(username) DO UPDATE SET x = excluded.x, y = excluded.y`, [username, location.x, location.y]);
+}
+
+export async function getAllWorldDescriptions() {
+  return new Promise((resolve, reject) => {
+    db.all(`SELECT x, y, description FROM world_descriptions`, [], (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows || []);
+    });
+  });
+}
+
+export async function getWorldCount() {
+  const row = await get(`SELECT COUNT(*) as cnt FROM world_descriptions`);
+  return row ? row.cnt : 0;
+}
+
+export async function seedWorld(rows) {
+  for (const r of rows) {
+    await run(`INSERT INTO world_descriptions (x, y, description) VALUES (?, ?, ?)
+      ON CONFLICT(x,y) DO UPDATE SET description = excluded.description`, [r.x, r.y, r.description]);
+  }
+}
+
+export async function saveWorldDescription(x, y, description) {
+  await run(`INSERT INTO world_descriptions (x, y, description) VALUES (?, ?, ?)
+    ON CONFLICT(x,y) DO UPDATE SET description = excluded.description`, [x, y, description]);
 }
