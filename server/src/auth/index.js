@@ -1,6 +1,5 @@
 import sqlite3 from "sqlite3";
 import crypto from "crypto";
-import { promisify } from "util";
 
 const DB_FILE = "users.db";
 
@@ -67,7 +66,6 @@ export async function authenticate(username, password) {
   if (!row) return false;
 
   const computed = hashPassword(password, row.salt);
-
   const a = Buffer.from(computed, "hex");
   const b = Buffer.from(row.password_hash, "hex");
 
