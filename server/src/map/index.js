@@ -11,7 +11,7 @@ export const directions = {
   nw: { dx: -1, dy: -1, label: "Noroeste" }
 };
 
-const defaultWorldDescriptions = new Map([
+const worldLocationDescription = new Map([
   ["0,0", "na praça central da Grade, cercada por colunas brilhantes e painéis de energia."],
   ["0,-1", "um corredor sombrio com inscrições antigas nas paredes de metal."],
   [["1,0"].join(","), "uma ponte suspendida sobre um fosso de energia azul."],
@@ -23,7 +23,7 @@ const defaultWorldDescriptions = new Map([
   [["-1,1"].join(","), "um depósito cheio de caixas retorcidas e caminhos estreitos."]
 ]);
 
-const defaultSeed = Array.from(defaultWorldDescriptions.entries()).map(([k, desc]) => {
+const defaultSeed = Array.from(worldLocationDescription.entries()).map(([k, desc]) => {
   const [x, y] = k.split(",").map(Number);
   return { x, y, description: desc };
 });
@@ -35,9 +35,9 @@ export async function initWorld() {
     return;
   }
 
-  defaultWorldDescriptions.clear();
+  worldLocationDescription.clear();
   for (const r of rows) {
-    defaultWorldDescriptions.set(`${r.x},${r.y}`, r.description);
+    worldLocationDescription.set(`${r.x},${r.y}`, r.description);
   }
 }
 
@@ -47,7 +47,7 @@ export function formatCoordinates(location) {
 
 export function describeLocation(location) {
   const key = `${location.x},${location.y}`;
-  return defaultWorldDescriptions.get(key) || `Você está em uma área desconhecida da Grade.`;
+  return worldLocationDescription.get(key) || `uma área desconhecida da Grade.`;
 }
 
 export function movePosition(location, directionKey) {
@@ -63,4 +63,4 @@ export function formatLocationMessage(location) {
   return `Você está em ${formatCoordinates(location)}: ${describeLocation(location)}`;
 }
 
-export { defaultWorldDescriptions as descriptions };
+export { worldLocationDescription as descriptions };

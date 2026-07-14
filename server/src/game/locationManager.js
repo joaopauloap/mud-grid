@@ -18,15 +18,3 @@ export async function loadPlayerLocation(player) {
 export function playersAtLocation(location, players) {
   return [...players.values()].filter(p => p.authenticated && p.location && p.location.x === location.x && p.location.y === location.y);
 }
-
-let syncTimer = null;
-export function startLocationSync(players) {
-  if (syncTimer) return;
-  syncTimer = setInterval(() => {
-    for (const player of players.values()) {
-      if (player.authenticated && player.location) {
-        auth.savePlayerLocation(player.name, player.location).catch(() => {});
-      }
-    }
-  }, 5 * 60 * 1000);
-}
