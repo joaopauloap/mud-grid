@@ -11,7 +11,7 @@ const socket = net.createConnection(
         port: PORT
     },
     () => {
-        console.log("Conectado ao mundo.\n");
+        console.log("Conectando...\n");
     }
 );
 
