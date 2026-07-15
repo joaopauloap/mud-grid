@@ -210,6 +210,10 @@ export async function saveWorldDescription(location) {
     ]);
 }
 
+export async function deleteWorldDescription(x, y) {
+    await run(`DELETE FROM world_descriptions WHERE x = ? AND y = ?`, [x, y]);
+}
+
 export async function createWorldObject(object) {
     const result = await run(`INSERT INTO world_objects (keyword, type, name, description, x, y) VALUES (?, ?, ?, ?, ?, ?)`, [
         object.keyword,

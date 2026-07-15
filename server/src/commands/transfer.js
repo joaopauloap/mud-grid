@@ -1,6 +1,7 @@
-import { descriptions, getLocationData, saveLocationData } from "../map/index.js";
-import { savePlayerLocation, hasRole, getWorldObjectById, updateWorldObjectLocation } from "../auth/index.js";
+import { descriptions, getLocationData, saveLocationData, lookLocation } from "../map/index.js";
+import { savePlayerLocation, hasRole, getWorldObjectById, updateWorldObjectLocation } from "../game/index.js";
 import { getAuthenticatedPlayer, parseCommandArgs } from "./utils.js";
+import { playersAtLocation } from "../game/locationManager.js";
 
 function parseCoordinate(value) {
     if (!value) return null;
@@ -52,9 +53,9 @@ export async function handleTransferCommand(player, input) {
         return true;
     }
 
-    const args = parseCommandArgs(input.slice("/transferir".length).trim());
+    const args = parseCommandArgs(input.slice("/transf".length).trim());
     if (args.length < 3) {
-        player.socket.write(`\nUso: /transferir <item|player> <id|nome> <coordenada|usuario>\r\n\n`);
+        player.socket.write(`\nUso: /transf <item|player> <id|nome> <coordenada|usuario>\r\n\n`);
         return true;
     }
 
@@ -76,11 +77,37 @@ export async function handleTransferCommand(player, input) {
             return true;
         }
 
+        const oldLocation = targetPlayer.location ? { ...targetPlayer.location } : null;
         targetPlayer.location = destination;
         try {
             await savePlayerLocation(targetPlayer.name, { x: destination.x, y: destination.y, inventory: targetPlayer.inventory || [] });
             player.socket.write(`\nJogador '${targetPlayer.name}' movido para (${destination.x}, ${destination.y}).\r\n\n`);
-            targetPlayer.socket.write(`\n[Sistema] Você foi movido para (${destination.x}, ${destination.y}).\r\n\n`);
+            targetPlayer.socket.write(`\n[Sistema]: Você foi movido.\r\n\n`);
+            
+            // Exibe a descrição do novo local (efeito do comando /ver)
+            const locationText = lookLocation(destination);
+            const others = playersAtLocation(destination, player.serverPlayers)
+                .filter(p => p.id !== targetPlayer.id)
+                .map(p => p.name);
+
+            const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
+            targetPlayer.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
+
+            // Notifica os jogadores no local de origem
+            if (oldLocation) {
+                const sourcePlayers = playersAtLocation(oldLocation, player.serverPlayers)
+                    .filter(p => p.id !== targetPlayer.id);
+                for (const other of sourcePlayers) {
+                    other.socket.write(`\n[Sistema]: O jogador '${targetPlayer.name}' foi transferido deste local.\r\n\n`);
+                }
+            }
+
+            // Notifica os jogadores no local de destino
+            const destinationPlayers = playersAtLocation(destination, player.serverPlayers)
+                .filter(p => p.id !== targetPlayer.id);
+            for (const other of destinationPlayers) {
+                other.socket.write(`\n[Sistema]: O jogador '${targetPlayer.name}' foi transferido para este local.\r\n\n`);
+            }
         } catch (err) {
             player.socket.write(`\nErro ao mover jogador: ${err.message}\r\n\n`);
         }
@@ -130,6 +157,23 @@ export async function handleTransferCommand(player, input) {
                 await saveLocationData(sourceLocation);
                 await saveLocationData(coordinate);
                 player.socket.write(`\nItem '${resolved.object.name}' movido para (${coordinate.x}, ${coordinate.y}).\r\n\n`);
+
+                const isDifferentLocation = !sourceLocation || sourceLocation.x !== coordinate.x || sourceLocation.y !== coordinate.y;
+                // Notifica jogadores no local de origem
+                if (sourceLocation && isDifferentLocation) {
+                    const sourcePlayers = playersAtLocation(sourceLocation, player.serverPlayers);
+                    for (const other of sourcePlayers) {
+                        other.socket.write(`\n[Sistema]: O objeto '${resolved.object.name}' foi transferido deste local.\r\n\n`);
+                    }
+                }
+
+                // Notifica jogadores no local de destino
+                if (isDifferentLocation) {
+                    const destinationPlayers = playersAtLocation(coordinate, player.serverPlayers);
+                    for (const other of destinationPlayers) {
+                        other.socket.write(`\n[Sistema]: O objeto '${resolved.object.name}' foi transferido para este local.\r\n\n`);
+                    }
+                }
             } catch (err) {
                 player.socket.write(`\nErro ao mover item: ${err.message}\r\n\n`);
             }
@@ -163,7 +207,15 @@ export async function handleTransferCommand(player, input) {
             await saveLocationData(sourceLocation);
             await savePlayerLocation(targetPlayer.name, { x: targetPlayer.location?.x ?? 0, y: targetPlayer.location?.y ?? 0, inventory: targetPlayer.inventory });
             player.socket.write(`\nItem '${resolved.object.name}' movido para o inventário de '${targetPlayer.name}'.\r\n\n`);
-            targetPlayer.socket.write(`\n[Sistema] Item '${resolved.object.name}' foi adicionado ao seu inventário.\r\n\n`);
+            targetPlayer.socket.write(`\n[Sistema]: Item '${resolved.object.name}' foi adicionado ao seu inventário.\r\n\n`);
+
+            // Notifica jogadores no local de origem do item
+            if (sourceLocation) {
+                const sourcePlayers = playersAtLocation(sourceLocation, player.serverPlayers);
+                for (const other of sourcePlayers) {
+                    other.socket.write(`\n[Sistema]: O objeto '${resolved.object.name}' foi transferido deste local.\r\n\n`);
+                }
+            }
         } catch (err) {
             player.socket.write(`\nErro ao mover item para o inventário: ${err.message}\r\n\n`);
         }

@@ -1,4 +1,4 @@
-import { hasRole, getAllWorldObjects } from "../auth/index.js";
+import { hasRole, getAllWorldObjects } from "../game/index.js";
 
 export async function handleInspectCommand(player) {
     const isAdmin = await hasRole(player.name, 'admin');

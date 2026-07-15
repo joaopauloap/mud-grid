@@ -1,6 +1,6 @@
 import net from "net";
-import * as auth from "../auth/index.js";
-import { handleAuthLine } from "../auth/authFlow.js";
+import * as game from "../game/index.js";
+import { handleAuthLine } from "../auth/auth.js";
 import { handleCommand } from "../commands/index.js";
 import { createPlayer, players } from "../game/playerManager.js";
 import { loadPlayerLocation } from "../game/locationManager.js";
@@ -32,7 +32,7 @@ function disconnectExistingUser(username, currentId) {
 }
 
 async function sendWelcome(player) {
-    const motd = await auth.getGameParam("motd") || "";
+    const motd = await game.getGameParam("motd") || "";
     write(player.socket, `\r\n${motd}\r\n`);
 }
 
@@ -42,7 +42,7 @@ function processLine(player, input) {
 }
 
 export async function startServer() {
-    await auth.init();
+    await game.init();
     await initWorld();
 
     const server = net.createServer(socket => {

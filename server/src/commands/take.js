@@ -1,4 +1,4 @@
-import { savePlayerLocation } from "../auth/index.js";
+import { savePlayerLocation } from "../game/index.js";
 import { saveLocationData, takeObjectFromLocation } from "../map/index.js";
 
 export async function handleTakeCommand(player, input) {

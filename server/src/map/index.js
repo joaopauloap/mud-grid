@@ -1,4 +1,4 @@
-import { getAllWorldDescriptions, seedWorld, getAllWorldObjects } from "../auth/index.js";
+import { getAllWorldDescriptions, seedWorld, getAllWorldObjects } from "../game/index.js";
 
 export const directions = {
     n: { dx: 0, dy: -1, label: "Norte" },
@@ -219,17 +219,17 @@ export function describeLocation(location) {
     const key = `${location.x},${location.y}`;
     const data = worldLocationDescription.get(key);
     if (!data) {
-        return `uma área desconhecida da Grade.`;
+        return `Coordenadas: ${getCoordinates(location)}\nUma área desconhecida da Grade.`;
     }
 
-    return `Coordenadas:${getCoordinates(location)}}\nCidade: ${data.city}\nLocal: ${data.place}\nAmbiente: ${data.environment}\r\n${data.description}\r\n${data.objects.length > 0 ? `\r\nHá no local: ` + data.objects.map(obj => obj.name).join(", ") : ""}`;
+    return `Coordenadas: ${getCoordinates(location)}\nCidade: ${data.city}\nLocal: ${data.place}\nAmbiente: ${data.environment}\r\n${data.description}\r\n${data.objects.length > 0 ? `\r\nHá no local: ` + data.objects.map(obj => obj.name).join(", ") : ""}`;
 }
 
 export function lookLocation(location) {
     const key = `${location.x},${location.y}`;
     const data = worldLocationDescription.get(key);
     if (!data) {
-        return `uma área desconhecida da Grade.`;
+        return `Uma área desconhecida da Grade.`;
     }
 
     return `${data.description}\r\n${data.objects.length > 0 ? `\r\nHá no local: ` + data.objects.map(obj => obj.name).join(", ") : ""}`;

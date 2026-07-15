@@ -1,5 +1,5 @@
 import { directions, movePosition, describeLocation } from "../map/index.js";
-import { savePlayerLocation } from "../auth/index.js";
+import { savePlayerLocation } from "../game/index.js";
 import { playersAtLocation } from "../game/locationManager.js";
 
 const directionAliases = {

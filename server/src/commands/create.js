@@ -1,7 +1,32 @@
 import { playersAtLocation } from "../game/locationManager.js";
-import { saveLocationData, addObjectToLocation } from "../map/index.js";
-import { hasRole, createWorldObject } from "../auth/index.js";
+import { descriptions, saveLocationData, addObjectToLocation } from "../map/index.js";
+import { hasRole, createWorldObject, savePlayerLocation } from "../game/index.js";
 import { getAuthenticatedPlayer, parseCommandArgs } from "./utils.js";
+
+function parseCoordinate(value) {
+    if (!value) return null;
+    const match = value.match(/^\(?\s*(-?\d+)\s*,\s*(-?\d+)\s*\)?$/);
+    if (!match) return null;
+    return { x: Number(match[1]), y: Number(match[2]) };
+}
+
+function ensureLocationData(location) {
+    const key = `${location.x},${location.y}`;
+    const existing = descriptions.get(key);
+    if (existing) {
+        return existing;
+    }
+
+    const data = {
+        city: "Grade",
+        place: "Local desconhecido",
+        environment: "Área sem descrição",
+        description: "Este local ainda não foi descrito.",
+        objects: []
+    };
+    descriptions.set(key, data);
+    return data;
+}
 
 export async function handleCreateCommand(player, input) {
     const isAdmin = await hasRole(player.name, 'admin');
@@ -12,72 +37,86 @@ export async function handleCreateCommand(player, input) {
 
     const tokens = parseCommandArgs(input.slice("/criar".length).trim());
     if (tokens.length < 4) {
-        player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [destino]\r\n\n`);
+        player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [coordenada|usuario]\r\n\n`);
         return;
     }
 
-    const [type, keyword, name, ...rest] = tokens;
-    if (rest.length === 0) {
-        player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [destino]\r\n\n`);
-        return;
-    }
-
-    let targetLocation = player.location;
-    let targetUser = null;
-    let description = rest.join(" ");
-
-    if (tokens.length > 4) {
-        const destinationValue = rest[rest.length - 1];
-        const destinationMatch = destinationValue.match(/^\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$/);
-        const possiblePlayer = getAuthenticatedPlayer(player.serverPlayers, destinationValue);
-
-        description = rest.slice(0, -1).join(" ");
-
-        if (destinationMatch) {
-            const [, x, y] = destinationMatch;
-            targetLocation = { x: Number(x), y: Number(y) };
-        } else if (possiblePlayer) {
-            targetUser = possiblePlayer.name;
-        } else {
-            player.socket.write(`\nDestino '${destinationValue}' inválido. Use um usuário conectado ou coordenadas (x,y).\r\n\n`);
-            return;
-        }
-    }
-
-    if (targetUser) {
-        const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, targetUser);
-        if (!targetPlayer || !targetPlayer.location) {
-            player.socket.write(`\nUsuário '${targetUser}' não encontrado ou sem localização carregada.\r\n\n`);
-            return;
-        }
-        targetLocation = targetPlayer.location;
-    }
-
-    const created = await createWorldObject({
-        keyword,
-        type,
-        name,
-        description,
-        x: targetLocation.x,
-        y: targetLocation.y
-    });
-
-    addObjectToLocation(targetLocation, { id: created.id, keyword: created.keyword, type: created.type, name: created.name, description: created.description });
+    const [type, keyword, name, description, dest] = tokens;
 
     try {
-        await saveLocationData(targetLocation);
-        player.socket.write(`\nObjeto '${name}' criado com id ${created.id} em (${targetLocation.x}, ${targetLocation.y}).\r\n\n`);
-
-        if (targetUser) {
-            const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, targetUser);
-            if (targetPlayer) {
-                targetPlayer.socket.write(`\n[Sistema] '${name}' foi adicionado ao seu inventário.\r\n\n`);
+        if (!dest) {
+            // Caso não seja informado nem coordenada nem nome do jogador, deve criar no local do jogador que executou o comando.
+            if (!player.location) {
+                player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
+                return;
             }
-        } else {
-            const presentPlayers = playersAtLocation(targetLocation, player.serverPlayers)
+
+            const created = await createWorldObject({ keyword, type, name, description, x: player.location.x, y: player.location.y });
+            const locationData = ensureLocationData(player.location);
+            locationData.objects.push({
+                id: created.id,
+                keyword: created.keyword,
+                type: created.type,
+                name: created.name,
+                description: created.description
+            });
+
+            await saveLocationData(player.location);
+
+            player.socket.write(`\nObjeto '${created.name}' (ID: ${created.id}) criado aqui.\r\n\n`);
+
+            const presentPlayers = playersAtLocation(player.location, player.serverPlayers)
                 .filter(p => p.id !== player.id);
             for (const other of presentPlayers) {
-                other.socket.write(`\n[Sistema] Um '${name}' aparece aqui.\r\n\n`);
+                other.socket.write(`\n[Sistema]: O objeto '${created.name}' foi criado neste local.\r\n\n`);
+            }
+        } else {
+            const coordinate = parseCoordinate(dest);
+            if (coordinate) {
+                // Se for coordenada, deve criar o objeto nesse local.
+                const created = await createWorldObject({ keyword, type, name, description, x: coordinate.x, y: coordinate.y });
+                const locationData = ensureLocationData(coordinate);
+                locationData.objects.push({
+                    id: created.id,
+                    keyword: created.keyword,
+                    type: created.type,
+                    name: created.name,
+                    description: created.description
+                });
+
+                await saveLocationData(coordinate);
+
+                player.socket.write(`\nObjeto '${created.name}' (ID: ${created.id}) criado no local (${coordinate.x}, ${coordinate.y}).\r\n\n`);
+
+                const presentPlayers = playersAtLocation(coordinate, player.serverPlayers)
+                    .filter(p => p.id !== player.id);
+                for (const other of presentPlayers) {
+                    other.socket.write(`\n[Sistema]: O objeto '${created.name}' foi criado neste local.\r\n\n`);
+                }
+            } else {
+                // Se for nome de jogador, deve criar o objeto no inventário do jogador.
+                const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, dest)
+                    || [...player.serverPlayers.values()].find(p => p.name && p.name.toLowerCase() === dest.toLowerCase());
+
+                if (!targetPlayer) {
+                    player.socket.write(`\nDestino '${dest}' inválido. Use uma coordenada válida ou o nome de um jogador conectado.\r\n\n`);
+                    return;
+                }
+
+                const created = await createWorldObject({ keyword, type, name, description, x: null, y: null });
+                targetPlayer.inventory = targetPlayer.inventory || [];
+                targetPlayer.inventory.push({
+                    id: created.id,
+                    keyword: created.keyword,
+                    type: created.type,
+                    name: created.name,
+                    description: created.description
+                });
+
+                await savePlayerLocation(targetPlayer.name, { x: targetPlayer.location?.x ?? 0, y: targetPlayer.location?.y ?? 0, inventory: targetPlayer.inventory });
+
+                player.socket.write(`\nObjeto '${created.name}' (ID: ${created.id}) criado no inventário do jogador '${targetPlayer.name}'.\r\n\n`);
+                targetPlayer.socket.write(`\n[Sistema]: '${created.name}' foi adicionado em seu inventário.\r\n\n`);
             }
         }
     } catch (err) {

@@ -39,7 +39,7 @@ socket.on("close", () => {
 socket.on("error", err => {
 
     console.log(
-        "Erro:",
+        "Erro de conexão:",
         err.message
     );
 

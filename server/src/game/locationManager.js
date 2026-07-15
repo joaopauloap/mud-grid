@@ -1,4 +1,4 @@
-import * as auth from "../auth/index.js";
+import * as auth from "./index.js";
 
 export function attachLocation(player) {
   if (!player.location) {

@@ -1,4 +1,4 @@
-import { createRole, deleteRole, getAllRoles, getUserRoles, hasRole, assignRole, removeRole } from "../auth/index.js";
+import { createRole, deleteRole, getAllRoles, getUserRoles, hasRole, assignRole, removeRole } from "../game/index.js";
 import { getAuthenticatedPlayer } from "./utils.js";
 
 export async function handleRolesCommand(player, input) {
@@ -99,7 +99,7 @@ export async function handleRoleCommand(player, input) {
 
             const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, target);
             if (targetPlayer) {
-                targetPlayer.socket.write(`\n[Sistema] Você recebeu a role '${role}'.\r\n\n`);
+                targetPlayer.socket.write(`\n[Sistema]: Você recebeu a role '${role}'.\r\n\n`);
             }
         } else if (action === 'remove') {
             await removeRole(target, role);

@@ -1,9 +1,9 @@
-import * as auth from "./index.js";
+import * as game from "../game/index.js";
 import { describeLocation } from "../map/index.js";
 import { playersAtLocation } from "../game/locationManager.js";
 
 export async function initAuth() {
-    await auth.init();
+    await game.init();
 }
 
 export async function handleAuthLine(player, input, callbacks) {
@@ -12,7 +12,7 @@ export async function handleAuthLine(player, input, callbacks) {
     if (player.stage === 'awaiting_username') {
         const username = input;
         player.pendingUsername = username;
-        const exists = await auth.userExists(username);
+        const exists = await game.userExists(username);
         if (exists) {
             player.stage = 'awaiting_password_login';
             sendLine(player.socket, `[Guardião]: Um usuário da Grade...`);
@@ -46,7 +46,7 @@ export async function handleAuthLine(player, input, callbacks) {
 
     if (player.stage === 'awaiting_password_login') {
         const password = input;
-        const ok = await auth.authenticate(player.pendingUsername, password);
+        const ok = await game.authenticate(player.pendingUsername, password);
         if (!ok) {
             sendLine(player.socket, 'Acesso negado.');
             sendLine(player.socket, `[Guardião]: Identifique-se, programa!`);
@@ -64,7 +64,7 @@ export async function handleAuthLine(player, input, callbacks) {
     if (player.stage === 'awaiting_password_register') {
         const password = input;
         try {
-            await auth.createUser(player.pendingUsername, password);
+            await game.createUser(player.pendingUsername, password);
             await completeAuthentication(player, broadcast, loadPlayerLocation, sendWelcome, sendLine);
         } catch (err) {
             sendLine(player.socket, `Erro ao registrar: ${err.message}`);

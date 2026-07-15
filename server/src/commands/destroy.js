@@ -1,4 +1,4 @@
-import { hasRole, getWorldObjectById, deleteWorldObjectById } from "../auth/index.js";
+import { hasRole, getWorldObjectById, deleteWorldObjectById } from "../game/index.js";
 import { playersAtLocation } from "../game/locationManager.js";
 import { saveLocationData, removeObjectFromLocationById } from "../map/index.js";
 
@@ -39,7 +39,7 @@ export async function handleDestroyCommand(player, input) {
         const presentPlayers = playersAtLocation(targetLocation, player.serverPlayers)
             .filter(p => p.id !== player.id);
         for (const other of presentPlayers) {
-            other.socket.write(`\n[Sistema] O objeto '${object.name}' foi destruído neste local.\r\n\n`);
+            other.socket.write(`\n[Sistema]: O objeto '${object.name}' foi destruído neste local.\r\n\n`);
         }
     } catch (err) {
         player.socket.write(`\nErro ao destruir objeto: ${err.message}\r\n\n`);

@@ -1,4 +1,4 @@
-import { hasRole } from "../auth/index.js";
+import { hasRole } from "../game/index.js";
 import { getAuthenticatedPlayer } from "./utils.js";
 
 export async function handleDisconnectCommand(player, input) {
@@ -20,7 +20,7 @@ export async function handleDisconnectCommand(player, input) {
         return;
     }
 
-    targetPlayer.socket.write(`\n[Sistema] Você foi desconectado.\r\n\n`);
+    targetPlayer.socket.write(`\n[Sistema]: Você foi desconectado.\r\n\n`);
     targetPlayer.socket.end();
     player.socket.write(`\nUsuário '${args[1]}' desconectado.\r\n\n`);
 }

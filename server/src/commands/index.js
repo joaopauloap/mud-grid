@@ -11,8 +11,15 @@ import { handleDisconnectCommand } from "./disconnect.js";
 import { handleRolesCommand, handleRoleCommand } from "./roles.js";
 import { handleMoveCommand } from "./move.js";
 import { handleTransferCommand } from "./transfer.js";
+import { handleMotdCommand } from "./motd.js";
+import { handleNamePlaceCommand, handleCleanNamePlaceCommand } from "./nameplace.js";
 
 export async function handleCommand(player, input, broadcast) {
+    if (input === "/motd") {
+        await handleMotdCommand(player);
+        return;
+    }
+
     if (input === "/quem") {
         await handleWhoCommand(player);
         return;
@@ -73,7 +80,17 @@ export async function handleCommand(player, input, broadcast) {
         return;
     }
 
-    if (input.startsWith("/transferir")) {
+    if (input.startsWith("/desc")) {
+        await handleNamePlaceCommand(player, input);
+        return;
+    }
+
+    if (input.startsWith("/nodesc")) {
+        await handleCleanNamePlaceCommand(player, input);
+        return;
+    }
+
+    if (input.startsWith("/transf")) {
         await handleTransferCommand(player, input);
         return;
     }
