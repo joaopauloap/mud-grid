@@ -10,8 +10,10 @@ export async function loadPlayerLocation(player) {
   const row = await auth.getLocation(player.name);
   if (row) {
     player.location = { x: row.x, y: row.y };
+    player.inventory = row.inventory || [];
   } else {
     player.location = { x: 0, y: 0 };
+    player.inventory = [];
   }
 }
 

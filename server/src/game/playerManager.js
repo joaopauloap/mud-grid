@@ -4,7 +4,7 @@ export function createPlayer(socket, id) {
   return {
     id,
     socket,
-    name: `Jogador${id}`,
+    name: `player${id}`,
     authenticated: false,
     stage: 'awaiting_username',
     pendingUsername: null,
