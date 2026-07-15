@@ -1,6 +1,6 @@
-﻿import { directions, movePosition, getCoordinates, describeLocation, lookLocation, takeObjectFromLocation, dropObjectToLocation, saveLocationData, addObjectToLocation, findObjectLocationById, moveObjectToLocation } from "../map/index.js";
+﻿import { directions, movePosition, getCoordinates, describeLocation, lookLocation, takeObjectFromLocation, dropObjectToLocation, saveLocationData, addObjectToLocation, removeObjectFromLocationById } from "../map/index.js";
 import { playersAtLocation } from "../game/locationManager.js";
-import { savePlayerLocation, assignRole, removeRole, getUserRoles, hasRole, createRole, getAllRoles, deleteRole } from "../auth/index.js";
+import { savePlayerLocation, assignRole, removeRole, getUserRoles, hasRole, createRole, getAllRoles, deleteRole, createWorldObject, getAllWorldObjects, getWorldObjectById, updateWorldObjectLocation, deleteWorldObjectById } from "../auth/index.js";
 
 const directionAliases = {
     "/n": "n",
@@ -28,13 +28,13 @@ export async function handleCommand(player, input, broadcast) {
             .map(p => p.name)
             .join("\n-");
 
-        player.socket.write(`\nConectados na Grade: \n-${names}\r\n`);
+        player.socket.write(`\nConectados na Grade: \n-${names}\r\n\n`);
         return;
     }
 
     if (input === "/onde") {
         if (!player.location) {
-            player.socket.write(`\nSua posição ainda não foi carregada.\r\n`);
+            player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
             return;
         }
 
@@ -44,13 +44,13 @@ export async function handleCommand(player, input, broadcast) {
             .map(p => p.name);
 
         const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
-        player.socket.write(`\n${locationText}\n${othersText}\r\n`);
+        player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
         return;
     }
 
     if (input === "/ver") {
         if (!player.location) {
-            player.socket.write(`\nSua posição ainda não foi carregada.\r\n`);
+            player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
             return;
         }
 
@@ -60,25 +60,25 @@ export async function handleCommand(player, input, broadcast) {
             .map(p => p.name);
 
         const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
-        player.socket.write(`\n${locationText}\n${othersText}\r\n`);
+        player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
         return;
     }
 
     if (input.startsWith("/pegar ")) {
         if (!player.location) {
-            player.socket.write(`\nSua posição ainda não foi carregada.\r\n`);
+            player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
             return;
         }
 
         const query = input.slice(7).trim();
         if (!query) {
-            player.socket.write(`\nUso: /pegar <objeto>\r\n`);
+            player.socket.write(`\nUso: /pegar <objeto>\r\n\n`);
             return;
         }
 
         const item = takeObjectFromLocation(player.location, query);
         if (!item) {
-            player.socket.write(`\nNão há '${query}' aqui.\r\n`);
+            player.socket.write(`\nNão há '${query}' aqui.\r\n\n`);
             return;
         }
 
@@ -88,29 +88,33 @@ export async function handleCommand(player, input, broadcast) {
         try {
             await savePlayerLocation(player.name, { x: player.location.x, y: player.location.y, inventory: player.inventory });
             await saveLocationData(player.location);
-            player.socket.write(`\nVocê pegou: ${item.name}.\r\n`);
+            player.socket.write(`\nVocê pegou: ${item.name}.\r\n\n`);
         } catch (err) {
-            player.socket.write(`\nErro ao pegar o item: ${err.message}\r\n`);
+            player.socket.write(`\nErro ao pegar o item: ${err.message}\r\n\n`);
         }
         return;
     }
 
     if (input.startsWith("/soltar ")) {
         if (!player.location) {
-            player.socket.write(`\nSua posição ainda não foi carregada.\r\n`);
+            player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
             return;
         }
 
         const query = input.slice(8).trim();
         if (!query) {
-            player.socket.write(`\nUso: /soltar <objeto>\r\n`);
+            player.socket.write(`\nUso: /soltar <objeto>\r\n\n`);
             return;
         }
 
         player.inventory = player.inventory || [];
-        const index = player.inventory.findIndex(obj => obj.id.toLowerCase() === query.toLowerCase() || obj.name.toLowerCase() === query.toLowerCase());
+        const index = player.inventory.findIndex(obj => {
+            const keyword = obj.keyword ? obj.keyword.toLowerCase() : "";
+            const name = obj.name ? obj.name.toLowerCase() : "";
+            return keyword === query.toLowerCase() || name === query.toLowerCase();
+        });
         if (index === -1) {
-            player.socket.write(`\nVocê não tem '${query}' no inventário.\r\n`);
+            player.socket.write(`\nVocê não tem '${query}' no inventário.\r\n\n`);
             return;
         }
 
@@ -120,9 +124,9 @@ export async function handleCommand(player, input, broadcast) {
         try {
             await savePlayerLocation(player.name, { x: player.location.x, y: player.location.y, inventory: player.inventory });
             await saveLocationData(player.location);
-            player.socket.write(`\nVocê soltou: ${item.name}.\r\n`);
+            player.socket.write(`\nVocê soltou: ${item.name}.\r\n\n`);
         } catch (err) {
-            player.socket.write(`\nErro ao soltar o item: ${err.message}\r\n`);
+            player.socket.write(`\nErro ao soltar o item: ${err.message}\r\n\n`);
         }
         return;
     }
@@ -130,149 +134,194 @@ export async function handleCommand(player, input, broadcast) {
     if (input === "/inventario" || input === "/inv" || input === "/i") {
         player.inventory = player.inventory || [];
         if (player.inventory.length === 0) {
-            player.socket.write(`\nSeu inventário está vazio.\r\n`);
+            player.socket.write(`\nSeu inventário está vazio.\r\n\n`);
             return;
         }
 
         const list = player.inventory.map(item => `- ${item.name}: ${item.description || "sem descrição"}`).join("\r\n\n");
-        player.socket.write(`\nSeu inventário:\n${list}\r\n`);
+        player.socket.write(`\nSeu inventário:\n${list}\r\n\n`);
         return;
     }
 
-    if (input.startsWith("/criarobj")) {
+    if (input.startsWith("/criar")) {
         const isAdmin = await hasRole(player.name, 'admin');
         if (!isAdmin) {
-            player.socket.write(`\nPermissão negada.\r\n`);
+            player.socket.write(`\nPermissão negada.\r\n\n`);
             return;
         }
 
-        const tokens = parseCommandArgs(input.slice("/criarobj".length).trim());
-        if (tokens.length < 4 || tokens.length > 5) {
-            player.socket.write(`\nUso: /criarobj <id> <tipo> <nome> <descrição> [destino]\r\n`);
+        const tokens = parseCommandArgs(input.slice("/criar".length).trim());
+        if (tokens.length < 4) {
+            player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [destino]\r\n\n`);
             return;
         }
 
-        const [id, type, name, description, target] = tokens;
-        if (findObjectLocationById(id)) {
-            player.socket.write(`\nJá existe um objeto com id '${id}'. Use um id único.\r\n`);
+        const [type, keyword, name, ...rest] = tokens;
+        if (rest.length === 0) {
+            player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [destino]\r\n\n`);
             return;
         }
 
         let targetLocation = player.location;
         let targetUser = null;
-        const coordMatch = target ? target.match(/^\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$/) : null;
+        let description = rest.join(" ");
 
-        if (target) {
-            if (coordMatch) {
-                const [, x, y] = coordMatch;
+        if (tokens.length > 4) {
+            const destinationValue = rest[rest.length - 1];
+            const destinationMatch = destinationValue.match(/^\(\s*(-?\d+)\s*,\s*(-?\d+)\s*\)$/);
+            const possiblePlayer = [...player.serverPlayers.values()]
+                .find(p => p.name && p.name.toLowerCase() === destinationValue.toLowerCase());
+
+            description = rest.slice(0, -1).join(" ");
+
+            if (destinationMatch) {
+                const [, x, y] = destinationMatch;
                 targetLocation = { x: Number(x), y: Number(y) };
+            } else if (possiblePlayer) {
+                if (!possiblePlayer.authenticated) {
+                    player.socket.write(`\nUsuário '${destinationValue}' não está conectado.\r\n\n`);
+                    return;
+                }
+                targetUser = possiblePlayer.name;
             } else {
-                targetUser = target;
+                player.socket.write(`\nDestino '${destinationValue}' inválido. Use um usuário conectado ou coordenadas (x,y).\r\n\n`);
+                return;
             }
         }
 
         if (targetUser) {
-            const targetPlayer = [...player.serverPlayers.values()].find(p => p.name === targetUser && p.authenticated);
+            const targetPlayer = [...player.serverPlayers.values()]
+                .find(p => p.authenticated && p.name.toLowerCase() === targetUser.toLowerCase());
             if (!targetPlayer || !targetPlayer.location) {
-                player.socket.write(`\nUsuário '${targetUser}' não encontrado ou sem localização carregada.\r\n`);
+                player.socket.write(`\nUsuário '${targetUser}' não encontrado ou sem localização carregada.\r\n\n`);
                 return;
             }
             targetLocation = targetPlayer.location;
         }
 
-        if (!targetLocation) {
-            player.socket.write(`\nSua posição atual não está disponível.\r\n`);
-            return;
-        }
+        const created = await createWorldObject({
+            keyword,
+            type,
+            name,
+            description,
+            x: targetLocation.x,
+            y: targetLocation.y
+        });
 
-        const object = { id, name, type, description };
-        addObjectToLocation(targetLocation, object);
+        addObjectToLocation(targetLocation, { id: created.id, keyword: created.keyword, type: created.type, name: created.name, description: created.description });
 
         try {
             await saveLocationData(targetLocation);
-
-            player.socket.write(`\nObjeto '${name}' criado em (${targetLocation.x}, ${targetLocation.y}).\r\n`);
+            player.socket.write(`\nObjeto '${name}' criado com id ${created.id} em (${targetLocation.x}, ${targetLocation.y}).\r\n\n`);
 
             if (targetUser) {
                 const targetPlayer = [...player.serverPlayers.values()].find(p => p.name === targetUser && p.authenticated);
                 if (targetPlayer) {
-                    targetPlayer.socket.write(`\n[Sistema] O item '${name}' foi adicionado ao seu inventário.\r\n`);
+                    targetPlayer.socket.write(`\n[Sistema] '${name}' foi adicionado ao seu inventário.\r\n\n`);
                 }
             } else {
                 const presentPlayers = playersAtLocation(targetLocation, player.serverPlayers)
                     .filter(p => p.id !== player.id);
                 for (const other of presentPlayers) {
-                    other.socket.write(`\n[Sistema] Um item '${name}' aparece aqui.\r\n`);
+                    other.socket.write(`\n[Sistema] Um '${name}' aparece aqui.\r\n\n`);
                 }
             }
         } catch (err) {
-            player.socket.write(`\nErro ao criar objeto: ${err.message}\r\n`);
+            player.socket.write(`\nErro ao criar objeto: ${err.message}\r\n\n`);
         }
         return;
     }
 
-    if (input.startsWith("/transferobj")) {
+    if (input.startsWith("/inspecionar")) {
         const isAdmin = await hasRole(player.name, 'admin');
         if (!isAdmin) {
-            player.socket.write(`\nPermissão negada.\r\n`);
-            return;
-        }
-
-        const args = parseCommandArgs(input.slice("/transferobj".length).trim());
-        if (args.length < 2 || args.length > 3) {
-            player.socket.write(`\nUso: /transferobj <id> <x> <y> | /transferobj <id> <usuario>\r\n`);
-            return;
-        }
-
-        const [objectId, ...destination] = args;
-        const findResult = findObjectLocationById(objectId);
-        if (!findResult) {
-            player.socket.write(`\nObjeto com id '${objectId}' não encontrado.\r\n`);
-            return;
-        }
-
-        let targetLocation = null;
-        let destinationText = "";
-
-        if (destination.length === 1) {
-            const username = destination[0];
-            const targetPlayer = [...player.serverPlayers.values()].find(p => p.name === username && p.authenticated);
-            if (!targetPlayer || !targetPlayer.location) {
-                player.socket.write(`\nUsuário '${username}' não encontrado ou sem localização carregada.\r\n`);
-                return;
-            }
-            targetLocation = targetPlayer.location;
-            destinationText = `para ${username}`;
-        } else if (destination.length === 2) {
-            const [xText, yText] = destination;
-            if (Number.isNaN(Number(xText)) || Number.isNaN(Number(yText))) {
-                player.socket.write(`\nUso: /transferobj <id> <x> <y> | /transferobj <id> <usuario>\r\n`);
-                return;
-            }
-            targetLocation = { x: Number(xText), y: Number(yText) };
-            destinationText = `para (${targetLocation.x}, ${targetLocation.y})`;
-        }
-
-        if (!targetLocation) {
-            player.socket.write(`\nDestino inválido.\r\n`);
-            return;
-        }
-
-        const moved = moveObjectToLocation(objectId, targetLocation);
-        if (!moved) {
-            player.socket.write(`\nFalha ao mover o objeto.\r\n`);
+            player.socket.write(`\nPermissão negada.\r\n\n`);
             return;
         }
 
         try {
-            await saveLocationData(findResult.location);
-            if (findResult.location.x !== targetLocation.x || findResult.location.y !== targetLocation.y) {
-                await saveLocationData(targetLocation);
+            const objects = await getAllWorldObjects();
+            if (objects.length === 0) {
+                player.socket.write(`\nNenhum objeto encontrado na tabela.\r\n\n`);
+                return;
             }
-            player.socket.write(`\nObjeto '${findResult.object.name}' transferido ${destinationText}.\r\n`);
+
+            const rows = objects.map(obj => `id=${obj.id}, keyword=${obj.keyword}, type=${obj.type}, name=${obj.name}, description=${obj.description}, x=${obj.x}, y=${obj.y}`).join(`\r\n\n`);
+            player.socket.write(`\nObjetos no banco:\r\n${rows}\r\n\n`);
         } catch (err) {
-            player.socket.write(`\nErro ao salvar transferência: ${err.message}\r\n`);
+            player.socket.write(`\nErro ao inspecionar objetos: ${err.message}\r\n\n`);
         }
+        return;
+    }
+
+    if (input.startsWith("/destruir")) {
+        const isAdmin = await hasRole(player.name, 'admin');
+        if (!isAdmin) {
+            player.socket.write(`\nPermissão negada.\r\n\n`);
+            return;
+        }
+
+        const args = parseCommandArgs(input.slice("/destruir".length).trim());
+        if (args.length !== 1) {
+            player.socket.write(`\nUso: /destruir <id>\r\n\n`);
+            return;
+        }
+
+        const id = Number(args[0]);
+        if (Number.isNaN(id)) {
+            player.socket.write(`\nID inválido. Use um número.\r\n\n`);
+            return;
+        }
+
+        const object = await getWorldObjectById(id);
+        if (!object) {
+            player.socket.write(`\nObjeto com id ${id} não encontrado.\r\n\n`);
+            return;
+        }
+
+        const targetLocation = { x: object.x, y: object.y };
+        removeObjectFromLocationById(targetLocation, id);
+
+        try {
+            await deleteWorldObjectById(id);
+            await saveLocationData(targetLocation);
+
+            player.socket.write(`\nObjeto '${object.name}' (id ${id}) destruído.\r\n\n`);
+
+            const presentPlayers = playersAtLocation(targetLocation, player.serverPlayers)
+                .filter(p => p.id !== player.id);
+            for (const other of presentPlayers) {
+                other.socket.write(`\n[Sistema] O objeto '${object.name}' foi destruído neste local.\r\n\n`);
+            }
+        } catch (err) {
+            player.socket.write(`\nErro ao destruir objeto: ${err.message}\r\n\n`);
+        }
+        return;
+    }
+
+    if (input.startsWith("/desconectar")) {
+        const isAdmin = await hasRole(player.name, 'admin');
+        if (!isAdmin) {
+            player.socket.write(`\nPermissão negada.\r\n\n`);
+            return;
+        }
+
+        const args = parseCommandArgs(input.slice("/desconectar".length).trim());
+        if (args.length !== 1) {
+            player.socket.write(`\nUso: /desconectar <usuario>\r\n\n`);
+            return;
+        }
+
+        const username = args[0];
+        const targetPlayer = [...player.serverPlayers.values()].find(p => p.name === username && p.authenticated);
+        if (!targetPlayer) {
+            player.socket.write(`\nUsuário '${username}' não encontrado ou não está conectado.\r\n\n`);
+            return;
+        }
+
+        targetPlayer.socket.write(`\n[Sistema] Você foi desconectado.\r\n\n`);
+        targetPlayer.socket.end();
+        player.socket.write(`\nUsuário '${username}' desconectado.\r\n\n`);
         return;
     }
 
@@ -283,14 +332,14 @@ export async function handleCommand(player, input, broadcast) {
         if (parts[1] === 'list' || parts[1] === 'all') {
             const isAdmin = await hasRole(player.name, 'admin');
             if (!isAdmin) {
-                player.socket.write(`\nPermissão negada.\r\n`);
+                player.socket.write(`\nPermissão negada.\r\n\n`);
                 return;
             }
             try {
                 const roles = await getAllRoles();
-                player.socket.write(`\nRoles existentes: ${roles.join(', ')}\r\n`);
+                player.socket.write(`\nRoles existentes: ${roles.join(', ')}\r\n\n`);
             } catch (err) {
-                player.socket.write(`\nErro ao listar roles: ${err.message}\r\n`);
+                player.socket.write(`\nErro ao listar roles: ${err.message}\r\n\n`);
             }
             return;
         }
@@ -299,19 +348,19 @@ export async function handleCommand(player, input, broadcast) {
         if (parts[1] === 'create') {
             const isAdmin = await hasRole(player.name, 'admin');
             if (!isAdmin) {
-                player.socket.write(`\nPermissão negada.\r\n`);
+                player.socket.write(`\nPermissão negada.\r\n\n`);
                 return;
             }
             const role = parts[2];
             if (!role) {
-                player.socket.write(`\nUso: /roles create <role>\r\n`);
+                player.socket.write(`\nUso: /roles create <role>\r\n\n`);
                 return;
             }
             try {
                 await createRole(role);
-                player.socket.write(`\nRole '${role}' criada.\r\n`);
+                player.socket.write(`\nRole '${role}' criada.\r\n\n`);
             } catch (err) {
-                player.socket.write(`\nErro ao criar role: ${err.message}\r\n`);
+                player.socket.write(`\nErro ao criar role: ${err.message}\r\n\n`);
             }
             return;
         }
@@ -320,19 +369,19 @@ export async function handleCommand(player, input, broadcast) {
         if (parts[1] === 'delete') {
             const isAdmin = await hasRole(player.name, 'admin');
             if (!isAdmin) {
-                player.socket.write(`\nPermissão negada.\r\n`);
+                player.socket.write(`\nPermissão negada.\r\n\n`);
                 return;
             }
             const role = parts[2];
             if (!role) {
-                player.socket.write(`\nUso: /roles delete <role>\r\n`);
+                player.socket.write(`\nUso: /roles delete <role>\r\n\n`);
                 return;
             }
             try {
                 await deleteRole(role);
-                player.socket.write(`\nRole '${role}' removida.\r\n`);
+                player.socket.write(`\nRole '${role}' removida.\r\n\n`);
             } catch (err) {
-                player.socket.write(`\nErro ao remover role: ${err.message}\r\n`);
+                player.socket.write(`\nErro ao remover role: ${err.message}\r\n\n`);
             }
             return;
         }
@@ -342,9 +391,9 @@ export async function handleCommand(player, input, broadcast) {
         try {
             const roles = await getUserRoles(target);
             const text = roles.length > 0 ? `Roles de ${target}: ${roles.join(", ")}` : `${target} não tem roles.`;
-            player.socket.write(`\n${text}\r\n`);
+            player.socket.write(`\n${text}\r\n\n`);
         } catch (err) {
-            player.socket.write(`\nErro ao buscar roles: ${err.message}\r\n`);
+            player.socket.write(`\nErro ao buscar roles: ${err.message}\r\n\n`);
         }
         return;
     }
@@ -353,7 +402,7 @@ export async function handleCommand(player, input, broadcast) {
     if (input.startsWith("/role ")) {
         const parts = input.split(/\s+/);
         if (parts.length < 4) {
-            player.socket.write(`\nUso: /role add|remove <usuario> <role>\r\n`);
+            player.socket.write(`\nUso: /role add|remove <usuario> <role>\r\n\n`);
             return;
         }
 
@@ -364,7 +413,7 @@ export async function handleCommand(player, input, broadcast) {
         // permission check: only admin
         const allowed = await hasRole(player.name, 'admin');
         if (!allowed) {
-            player.socket.write(`\nPermissão negada.\r\n`);
+            player.socket.write(`\nPermissão negada.\r\n\n`);
             return;
         }
 
@@ -372,15 +421,20 @@ export async function handleCommand(player, input, broadcast) {
             if (action === 'add') {
                 await createRole(role);
                 await assignRole(target, role);
-                player.socket.write(`\nRole '${role}' atribuída a ${target}.\r\n`);
+                player.socket.write(`\nRole '${role}' atribuída a ${target}.\r\n\n`);
+
+                const targetPlayer = [...player.serverPlayers.values()].find(p => p.name === target && p.authenticated);
+                if (targetPlayer) {
+                    targetPlayer.socket.write(`\n[Sistema] Você recebeu a role '${role}'.\r\n\n`);
+                }
             } else if (action === 'remove') {
                 await removeRole(target, role);
-                player.socket.write(`\nRole '${role}' removida de ${target}.\r\n`);
+                player.socket.write(`\nRole '${role}' removida de ${target}.\r\n\n`);
             } else {
-                player.socket.write(`\nAção desconhecida. Use add ou remove.\r\n`);
+                player.socket.write(`\nAção desconhecida. Use add ou remove.\r\n\n`);
             }
         } catch (err) {
-            player.socket.write(`\nErro ao gerenciar role: ${err.message}\r\n`);
+            player.socket.write(`\nErro ao gerenciar role: ${err.message}\r\n\n`);
         }
 
         return;
@@ -414,7 +468,7 @@ function parseCommandArgs(text) {
 
 async function movePlayer(player, directionKey) {
     if (!player.location) {
-        player.socket.write(`\nPosição desconhecida.\r\n`);
+        player.socket.write(`\nPosição desconhecida.\r\n\n`);
         return;
     }
 
@@ -422,7 +476,7 @@ async function movePlayer(player, directionKey) {
     try {
         await savePlayerLocation(player.name, { x: player.location.x, y: player.location.y, inventory: player.inventory || [] });
     } catch (err) {
-        player.socket.write(`\nNão foi possível salvar sua posição agora.\r\n`);
+        player.socket.write(`\nNão foi possível salvar sua posição agora.\r\n\n`);
     }
 
     const label = directions[directionKey]?.label || directionKey.toUpperCase();
@@ -434,5 +488,5 @@ async function movePlayer(player, directionKey) {
         .map(p => p.name);
 
     const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
-    player.socket.write(`\n${locationText}\n${othersText}\r\n`);
+    player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
 }

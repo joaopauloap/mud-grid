@@ -1,7 +1,7 @@
 import sqlite3 from "sqlite3";
 import crypto from "crypto";
 
-const DB_FILE = "users.db";
+const DB_FILE = "database.db";
 
 const sqlite = sqlite3.verbose();
 const db = new sqlite.Database(DB_FILE);
@@ -69,8 +69,17 @@ export async function init() {
     place TEXT,
     environment TEXT,
     description TEXT,
-    objects TEXT,
     PRIMARY KEY(x,y)
+  )`);
+
+    await run(`CREATE TABLE IF NOT EXISTS world_objects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT,
+    type TEXT,
+    name TEXT,
+    description TEXT,
+    x INTEGER,
+    y INTEGER
   )`);
 
     await run(`CREATE TABLE IF NOT EXISTS roles (
@@ -155,7 +164,7 @@ export async function savePlayerLocation(username, location) {
 
 export async function getAllWorldDescriptions() {
     return new Promise((resolve, reject) => {
-        db.all(`SELECT x, y, city, place, environment, description, objects FROM world_descriptions`, [], (err, rows) => {
+        db.all(`SELECT x, y, city, place, environment, description FROM world_descriptions`, [], (err, rows) => {
             if (err) return reject(err);
             const parsed = (rows || []).map(r => ({
                 x: r.x,
@@ -163,8 +172,7 @@ export async function getAllWorldDescriptions() {
                 city: r.city,
                 place: r.place,
                 environment: r.environment,
-                description: r.description,
-                objects: r.objects ? JSON.parse(r.objects) : []
+                description: r.description
             }));
             resolve(parsed);
         });
@@ -178,30 +186,107 @@ export async function getWorldCount() {
 
 export async function seedWorld(rows) {
     for (const r of rows) {
-        await run(`INSERT INTO world_descriptions (x, y, city, place, environment, description, objects) VALUES (?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(x,y) DO UPDATE SET city = excluded.city, place = excluded.place, environment = excluded.environment, description = excluded.description, objects = excluded.objects`, [
+        await run(`INSERT INTO world_descriptions (x, y, city, place, environment, description) VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(x,y) DO UPDATE SET city = excluded.city, place = excluded.place, environment = excluded.environment, description = excluded.description`, [
             r.x,
             r.y,
             r.city,
             r.place,
             r.environment,
-            r.description,
-            JSON.stringify(r.objects || [])
+            r.description
         ]);
     }
 }
 
 export async function saveWorldDescription(location) {
-    await run(`INSERT INTO world_descriptions (x, y, city, place, environment, description, objects) VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(x,y) DO UPDATE SET city = excluded.city, place = excluded.place, environment = excluded.environment, description = excluded.description, objects = excluded.objects`, [
+    await run(`INSERT INTO world_descriptions (x, y, city, place, environment, description) VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(x,y) DO UPDATE SET city = excluded.city, place = excluded.place, environment = excluded.environment, description = excluded.description`, [
         location.x,
         location.y,
         location.city,
         location.place,
         location.environment,
-        location.description,
-        JSON.stringify(location.objects || [])
+        location.description
     ]);
+}
+
+export async function createWorldObject(object) {
+    const result = await run(`INSERT INTO world_objects (keyword, type, name, description, x, y) VALUES (?, ?, ?, ?, ?, ?)`, [
+        object.keyword,
+        object.type,
+        object.name,
+        object.description,
+        object.x,
+        object.y
+    ]);
+    return {
+        id: result.lastID,
+        keyword: object.keyword,
+        type: object.type,
+        name: object.name,
+        description: object.description,
+        x: object.x,
+        y: object.y
+    };
+}
+
+export async function getAllWorldObjects() {
+    return new Promise((resolve, reject) => {
+        db.all(`SELECT id, keyword, type, name, description, x, y FROM world_objects`, [], (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+        });
+    });
+}
+
+export async function getWorldObjectsByLocation(x, y) {
+    return new Promise((resolve, reject) => {
+        db.all(`SELECT id, keyword, type, name, description, x, y FROM world_objects WHERE x = ? AND y = ?`, [x, y], (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+        });
+    });
+}
+
+export async function getWorldObjectById(id) {
+    const row = await get(`SELECT id, keyword, type, name, description, x, y FROM world_objects WHERE id = ?`, [id]);
+    return row || null;
+}
+
+export async function updateWorldObjectLocation(id, x, y) {
+    await run(`UPDATE world_objects SET x = ?, y = ? WHERE id = ?`, [x, y, id]);
+    return await getWorldObjectById(id);
+}
+
+export async function seedWorldObjects(objects) {
+    for (const obj of objects) {
+        await run(`INSERT OR IGNORE INTO world_objects (keyword, type, name, description, x, y) VALUES (?, ?, ?, ?, ?, ?)`, [
+            obj.keyword,
+            obj.type,
+            obj.name,
+            obj.description,
+            obj.x,
+            obj.y
+        ]);
+    }
+}
+
+export async function getWorldObjectCount() {
+    const row = await get(`SELECT COUNT(*) as cnt FROM world_objects`);
+    return row ? row.cnt : 0;
+}
+
+export async function deleteWorldObjectById(id) {
+    await run(`DELETE FROM world_objects WHERE id = ?`, [id]);
+}
+
+export async function getWorldObjectsByKeyword(keyword) {
+    return new Promise((resolve, reject) => {
+        db.all(`SELECT id, keyword, type, name, description, x, y FROM world_objects WHERE keyword = ?`, [keyword], (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+        });
+    });
 }
 
 export async function createRole(name) {

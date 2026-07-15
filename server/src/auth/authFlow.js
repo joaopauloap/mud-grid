@@ -80,7 +80,7 @@ export async function handleAuthLine(player, input, callbacks) {
 async function completeAuthentication(player, broadcast, loadPlayerLocation, sendWelcome, sendLine) {
     player.authenticated = true;
     player.name = player.pendingUsername;
-    broadcast(`[Sistema]: ${player.name} entrou na Grade.\n`);
+    broadcast(`[Sistema]: ${player.name} entrou na Grade.\r\n\n`);
     await loadPlayerLocation(player);
     await sendWelcome(player);
     await sendLocationStatus(player, sendLine);

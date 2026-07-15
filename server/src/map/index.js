@@ -1,4 +1,4 @@
-import { getAllWorldDescriptions, seedWorld } from "../auth/index.js";
+import { getAllWorldDescriptions, seedWorld, getAllWorldObjects } from "../auth/index.js";
 
 export const directions = {
     n: { dx: 0, dy: -1, label: "Norte" },
@@ -93,14 +93,14 @@ const worldLocationDescription = new Map([
 
 const defaultSeed = Array.from(worldLocationDescription.entries()).map(([k, data]) => {
     const [x, y] = k.split(",").map(Number);
-    return { x, y, city: data.city, place: data.place, environment: data.environment, description: data.description, objects: data.objects };
+    return { x, y, city: data.city, place: data.place, environment: data.environment, description: data.description };
 });
 
 export async function initWorld() {
-    const rows = await getAllWorldDescriptions();
+    let rows = await getAllWorldDescriptions();
     if (!rows || rows.length === 0) {
         await seedWorld(defaultSeed);
-        return;
+        rows = await getAllWorldDescriptions();
     }
 
     worldLocationDescription.clear();
@@ -110,8 +110,23 @@ export async function initWorld() {
             place: r.place,
             environment: r.environment,
             description: r.description,
-            objects: r.objects || []
+            objects: []
         });
+    }
+
+    const worldObjects = await getAllWorldObjects();
+    for (const obj of worldObjects) {
+        const key = `${obj.x},${obj.y}`;
+        const data = worldLocationDescription.get(key);
+        if (data) {
+            data.objects.push({
+                id: obj.id,
+                keyword: obj.keyword,
+                type: obj.type,
+                name: obj.name,
+                description: obj.description
+            });
+        }
     }
 }
 
@@ -126,14 +141,14 @@ export async function saveLocationData(location) {
     if (!data) {
         throw new Error("Local desconhecido, não é possível salvar dados do local.");
     }
-    await seedWorld([{ x: location.x, y: location.y, city: data.city, place: data.place, environment: data.environment, description: data.description, objects: data.objects || [] }]);
+    await seedWorld([{ x: location.x, y: location.y, city: data.city, place: data.place, environment: data.environment, description: data.description }]);
 }
 
 export function takeObjectFromLocation(location, query) {
     const data = getLocationData(location);
     if (!data || !data.objects) return null;
 
-    const index = data.objects.findIndex(obj => obj.id.toLowerCase() === query.toLowerCase() || obj.name.toLowerCase() === query.toLowerCase());
+    const index = data.objects.findIndex(obj => obj.keyword.toLowerCase() === query.toLowerCase() || obj.name.toLowerCase() === query.toLowerCase());
     if (index === -1) return null;
 
     return data.objects.splice(index, 1)[0];
@@ -158,7 +173,7 @@ export function addObjectToLocation(location, object) {
 
 export function findObjectLocationById(objectId) {
     for (const [key, data] of worldLocationDescription.entries()) {
-        const object = (data.objects || []).find(obj => obj.id.toLowerCase() === objectId.toLowerCase());
+        const object = (data.objects || []).find(obj => String(obj.id) === String(objectId));
         if (object) {
             const [x, y] = key.split(",").map(Number);
             return { object, location: { x, y } };
@@ -176,7 +191,7 @@ export function moveObjectToLocation(objectId, destination) {
     const sourceData = getLocationData(sourceLocation);
     if (!sourceData) return null;
 
-    const index = sourceData.objects.findIndex(obj => obj.id.toLowerCase() === objectId.toLowerCase());
+    const index = sourceData.objects.findIndex(obj => String(obj.id) === String(objectId));
     if (index === -1) return null;
 
     const [item] = sourceData.objects.splice(index, 1);
@@ -185,6 +200,15 @@ export function moveObjectToLocation(objectId, destination) {
     destData.objects = destData.objects || [];
     destData.objects.push(item);
     return item;
+}
+
+export function removeObjectFromLocationById(location, objectId) {
+    const data = getLocationData(location);
+    if (!data || !data.objects) return false;
+    const index = data.objects.findIndex(obj => String(obj.id) === String(objectId));
+    if (index === -1) return false;
+    data.objects.splice(index, 1);
+    return true;
 }
 
 export function getCoordinates(location) {
