@@ -1,0 +1,175 @@
+import { descriptions, getLocationData, saveLocationData } from "../map/index.js";
+import { savePlayerLocation, hasRole, getWorldObjectById, updateWorldObjectLocation } from "../auth/index.js";
+import { getAuthenticatedPlayer, parseCommandArgs } from "./utils.js";
+
+function parseCoordinate(value) {
+    if (!value) return null;
+    const match = value.match(/^\(?\s*(-?\d+)\s*,\s*(-?\d+)\s*\)?$/);
+    if (!match) return null;
+    return { x: Number(match[1]), y: Number(match[2]) };
+}
+
+function ensureLocationData(location) {
+    const key = `${location.x},${location.y}`;
+    const existing = descriptions.get(key);
+    if (existing) {
+        return existing;
+    }
+
+    const data = {
+        city: "Grade",
+        place: "Local desconhecido",
+        environment: "Área sem descrição",
+        description: "Este local ainda não foi descrito.",
+        objects: []
+    };
+    descriptions.set(key, data);
+    return data;
+}
+
+function findObjectInWorld(query) {
+    const normalized = String(query).trim().toLowerCase();
+    for (const [key, data] of descriptions.entries()) {
+        const object = (data.objects || []).find(item => {
+            const keyword = item.keyword ? item.keyword.toLowerCase() : "";
+            const name = item.name ? item.name.toLowerCase() : "";
+            return keyword === normalized || name === normalized || String(item.id) === normalized;
+        });
+
+        if (object) {
+            const [x, y] = key.split(",").map(Number);
+            return { object, location: { x, y } };
+        }
+    }
+
+    return null;
+}
+
+export async function handleTransferCommand(player, input) {
+    const isAdmin = await hasRole(player.name, 'admin');
+    if (!isAdmin) {
+        player.socket.write(`\nPermissão negada.\r\n\n`);
+        return true;
+    }
+
+    const args = parseCommandArgs(input.slice("/transferir".length).trim());
+    if (args.length < 3) {
+        player.socket.write(`\nUso: /transferir <item|player> <id|nome> <coordenada|usuario>\r\n\n`);
+        return true;
+    }
+
+    const [targetKindArg, targetValue, destinationValue] = args;
+    const targetKind = targetKindArg.toLowerCase();
+
+    if (targetKind === "player" || targetKind === "jogador" || targetKind === "p") {
+        const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, targetValue)
+            || [...player.serverPlayers.values()].find(p => String(p.id) === String(targetValue));
+
+        if (!targetPlayer) {
+            player.socket.write(`\nJogador '${targetValue}' não encontrado ou não está conectado.\r\n\n`);
+            return true;
+        }
+
+        const destination = parseCoordinate(destinationValue);
+        if (!destination) {
+            player.socket.write(`\nCoordenada inválida. Use algo como (3,4).\r\n\n`);
+            return true;
+        }
+
+        targetPlayer.location = destination;
+        try {
+            await savePlayerLocation(targetPlayer.name, { x: destination.x, y: destination.y, inventory: targetPlayer.inventory || [] });
+            player.socket.write(`\nJogador '${targetPlayer.name}' movido para (${destination.x}, ${destination.y}).\r\n\n`);
+            targetPlayer.socket.write(`\n[Sistema] Você foi movido para (${destination.x}, ${destination.y}).\r\n\n`);
+        } catch (err) {
+            player.socket.write(`\nErro ao mover jogador: ${err.message}\r\n\n`);
+        }
+        return true;
+    }
+
+    if (targetKind === "item" || targetKind === "objeto" || targetKind === "obj") {
+        const numericTarget = Number(targetValue);
+        let resolved = null;
+
+        if (!Number.isNaN(numericTarget) && String(numericTarget) === targetValue) {
+            const objectRow = await getWorldObjectById(numericTarget);
+            if (objectRow) {
+                resolved = { object: objectRow, location: { x: objectRow.x, y: objectRow.y } };
+            }
+        }
+
+        if (!resolved) {
+            resolved = findObjectInWorld(targetValue);
+        }
+
+        if (!resolved || !resolved.object) {
+            player.socket.write(`\nItem '${targetValue}' não encontrado.\r\n\n`);
+            return true;
+        }
+
+        const coordinate = parseCoordinate(destinationValue);
+        if (coordinate) {
+            const sourceLocation = resolved.location || { x: resolved.object.x, y: resolved.object.y };
+            const sourceData = getLocationData(sourceLocation) || ensureLocationData(sourceLocation);
+            const index = sourceData.objects.findIndex(item => String(item.id) === String(resolved.object.id));
+            if (index !== -1) {
+                sourceData.objects.splice(index, 1);
+            }
+
+            const destinationData = ensureLocationData(coordinate);
+            destinationData.objects.push({
+                id: resolved.object.id,
+                keyword: resolved.object.keyword,
+                type: resolved.object.type,
+                name: resolved.object.name,
+                description: resolved.object.description
+            });
+
+            try {
+                await updateWorldObjectLocation(resolved.object.id, coordinate.x, coordinate.y);
+                await saveLocationData(sourceLocation);
+                await saveLocationData(coordinate);
+                player.socket.write(`\nItem '${resolved.object.name}' movido para (${coordinate.x}, ${coordinate.y}).\r\n\n`);
+            } catch (err) {
+                player.socket.write(`\nErro ao mover item: ${err.message}\r\n\n`);
+            }
+            return true;
+        }
+
+        const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, destinationValue)
+            || [...player.serverPlayers.values()].find(p => String(p.id) === String(destinationValue));
+        if (!targetPlayer) {
+            player.socket.write(`\nDestino '${destinationValue}' inválido. Use uma coordenada ou um jogador conectado.\r\n\n`);
+            return true;
+        }
+
+        const sourceLocation = resolved.location || { x: resolved.object.x, y: resolved.object.y };
+        const sourceData = getLocationData(sourceLocation) || ensureLocationData(sourceLocation);
+        const index = sourceData.objects.findIndex(item => String(item.id) === String(resolved.object.id));
+        if (index !== -1) {
+            sourceData.objects.splice(index, 1);
+        }
+
+        targetPlayer.inventory = targetPlayer.inventory || [];
+        targetPlayer.inventory.push({
+            id: resolved.object.id,
+            keyword: resolved.object.keyword,
+            type: resolved.object.type,
+            name: resolved.object.name,
+            description: resolved.object.description
+        });
+
+        try {
+            await saveLocationData(sourceLocation);
+            await savePlayerLocation(targetPlayer.name, { x: targetPlayer.location?.x ?? 0, y: targetPlayer.location?.y ?? 0, inventory: targetPlayer.inventory });
+            player.socket.write(`\nItem '${resolved.object.name}' movido para o inventário de '${targetPlayer.name}'.\r\n\n`);
+            targetPlayer.socket.write(`\n[Sistema] Item '${resolved.object.name}' foi adicionado ao seu inventário.\r\n\n`);
+        } catch (err) {
+            player.socket.write(`\nErro ao mover item para o inventário: ${err.message}\r\n\n`);
+        }
+        return true;
+    }
+
+    player.socket.write(`\nTipo inválido. Use item ou player.\r\n\n`);
+    return true;
+}
