@@ -11,7 +11,7 @@ function parseCoordinate(value) {
     return { x: Number(match[1]), y: Number(match[2]) };
 }
 
-export async function handleNamePlaceCommand(player, input) {
+export async function handlePlaceNameCommand(player, input) {
     const isAdmin = await hasRole(player.name, 'admin');
     if (!isAdmin) {
         player.socket.write(`\nPermissão negada.\r\n\n`);
@@ -80,7 +80,7 @@ export async function handleNamePlaceCommand(player, input) {
     }
 }
 
-export async function handleCleanNamePlaceCommand(player, input) {
+export async function handleClearPlaceNameCommand(player, input) {
     const isAdmin = await hasRole(player.name, 'admin');
     if (!isAdmin) {
         player.socket.write(`\nPermissão negada.\r\n\n`);

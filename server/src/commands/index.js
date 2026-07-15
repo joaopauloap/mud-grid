@@ -12,7 +12,7 @@ import { handleRolesCommand, handleRoleCommand } from "./roles.js";
 import { handleMoveCommand } from "./move.js";
 import { handleTransferCommand } from "./transfer.js";
 import { handleMotdCommand } from "./motd.js";
-import { handleNamePlaceCommand, handleCleanNamePlaceCommand } from "./nameplace.js";
+import { handlePlaceNameCommand, handleClearPlaceNameCommand } from "./placename.js";
 
 export async function handleCommand(player, input, broadcast) {
     if (input === "/motd") {
@@ -81,12 +81,12 @@ export async function handleCommand(player, input, broadcast) {
     }
 
     if (input.startsWith("/desc")) {
-        await handleNamePlaceCommand(player, input);
+        await handlePlaceNameCommand(player, input);
         return;
     }
 
     if (input.startsWith("/nodesc")) {
-        await handleCleanNamePlaceCommand(player, input);
+        await handleClearPlaceNameCommand(player, input);
         return;
     }
 
