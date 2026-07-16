@@ -2,6 +2,7 @@ import { descriptions, getLocationData, saveLocationData, lookLocation } from ".
 import { savePlayerLocation, hasRole, getWorldObjectById, updateWorldObjectLocation } from "../game/index.js";
 import { getAuthenticatedPlayer, parseCommandArgs } from "./utils.js";
 import { playersAtLocation } from "../game/locationManager.js";
+import { GameService } from "../services/gameService.js";
 
 function parseCoordinate(value) {
     if (!value) return null;
@@ -77,10 +78,8 @@ export async function handleTransferCommand(player, input) {
             return true;
         }
 
-        const oldLocation = targetPlayer.location ? { ...targetPlayer.location } : null;
-        targetPlayer.location = destination;
         try {
-            await savePlayerLocation(targetPlayer.name, { x: destination.x, y: destination.y, inventory: targetPlayer.inventory || [] });
+            const { oldLocation } = await GameService.transferPlayer(targetPlayer, destination);
             player.socket.write(`\nJogador '${targetPlayer.name}' movido para (${destination.x}, ${destination.y}).\r\n\n`);
             targetPlayer.socket.write(`\n[Sistema]: Você foi movido.\r\n\n`);
             
@@ -137,25 +136,9 @@ export async function handleTransferCommand(player, input) {
         const coordinate = parseCoordinate(destinationValue);
         if (coordinate) {
             const sourceLocation = resolved.location || { x: resolved.object.x, y: resolved.object.y };
-            const sourceData = getLocationData(sourceLocation) || ensureLocationData(sourceLocation);
-            const index = sourceData.objects.findIndex(item => String(item.id) === String(resolved.object.id));
-            if (index !== -1) {
-                sourceData.objects.splice(index, 1);
-            }
-
-            const destinationData = ensureLocationData(coordinate);
-            destinationData.objects.push({
-                id: resolved.object.id,
-                keyword: resolved.object.keyword,
-                type: resolved.object.type,
-                name: resolved.object.name,
-                description: resolved.object.description
-            });
-
+            
             try {
-                await updateWorldObjectLocation(resolved.object.id, coordinate.x, coordinate.y);
-                await saveLocationData(sourceLocation);
-                await saveLocationData(coordinate);
+                await GameService.transferItemToLocation(resolved.object, sourceLocation, coordinate);
                 player.socket.write(`\nItem '${resolved.object.name}' movido para (${coordinate.x}, ${coordinate.y}).\r\n\n`);
 
                 const isDifferentLocation = !sourceLocation || sourceLocation.x !== coordinate.x || sourceLocation.y !== coordinate.y;
@@ -188,24 +171,9 @@ export async function handleTransferCommand(player, input) {
         }
 
         const sourceLocation = resolved.location || { x: resolved.object.x, y: resolved.object.y };
-        const sourceData = getLocationData(sourceLocation) || ensureLocationData(sourceLocation);
-        const index = sourceData.objects.findIndex(item => String(item.id) === String(resolved.object.id));
-        if (index !== -1) {
-            sourceData.objects.splice(index, 1);
-        }
-
-        targetPlayer.inventory = targetPlayer.inventory || [];
-        targetPlayer.inventory.push({
-            id: resolved.object.id,
-            keyword: resolved.object.keyword,
-            type: resolved.object.type,
-            name: resolved.object.name,
-            description: resolved.object.description
-        });
-
+        
         try {
-            await saveLocationData(sourceLocation);
-            await savePlayerLocation(targetPlayer.name, { x: targetPlayer.location?.x ?? 0, y: targetPlayer.location?.y ?? 0, inventory: targetPlayer.inventory });
+            await GameService.transferItemToPlayer(resolved.object, sourceLocation, targetPlayer);
             player.socket.write(`\nItem '${resolved.object.name}' movido para o inventário de '${targetPlayer.name}'.\r\n\n`);
             targetPlayer.socket.write(`\n[Sistema]: Item '${resolved.object.name}' foi adicionado ao seu inventário.\r\n\n`);
 
@@ -225,3 +193,11 @@ export async function handleTransferCommand(player, input) {
     player.socket.write(`\nTipo inválido. Use item ou player.\r\n\n`);
     return true;
 }
+
+export const command = {
+    name: "transf",
+    aliases: ["/transf", "/transferir"],
+    async execute(player, input) {
+        await handleTransferCommand(player, input);
+    }
+};

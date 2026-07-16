@@ -1,109 +1,86 @@
-﻿import { handleWhoCommand } from "./who.js";
-import { handleWhereCommand } from "./where.js";
-import { handleLookCommand } from "./look.js";
-import { handleTakeCommand } from "./take.js";
-import { handleDropCommand } from "./drop.js";
-import { handleInventoryCommand } from "./inventory.js";
-import { handleCreateCommand } from "./create.js";
-import { handleInspectCommand } from "./inspect.js";
-import { handleDestroyCommand } from "./destroy.js";
-import { handleDisconnectCommand } from "./disconnect.js";
-import { handleRolesCommand, handleRoleCommand } from "./roles.js";
-import { handleMoveCommand } from "./move.js";
-import { handleTransferCommand } from "./transfer.js";
-import { handleMotdCommand } from "./motd.js";
-import { handlePlaceNameCommand, handleClearPlaceNameCommand } from "./placename.js";
+﻿import { command as who } from "./who.js";
+import { command as where } from "./where.js";
+import { command as look } from "./look.js";
+import { command as take } from "./take.js";
+import { command as drop } from "./drop.js";
+import { command as inventory } from "./inventory.js";
+import { command as create } from "./create.js";
+import { command as inspect } from "./inspect.js";
+import { command as destroy } from "./destroy.js";
+import { command as disconnect } from "./disconnect.js";
+import { rolesCommand, roleCommand } from "./roles.js";
+import { command as move } from "./move.js";
+import { command as transfer } from "./transfer.js";
+import { command as motd } from "./motd.js";
+import { descCommand, nodescCommand } from "./placename.js";
+
+// Mapa de comandos registrados
+const commandMap = new Map();
+
+function register(cmd) {
+    if (!cmd || !cmd.name) return;
+    commandMap.set(cmd.name.toLowerCase(), cmd);
+    if (cmd.aliases) {
+        for (const alias of cmd.aliases) {
+            commandMap.set(alias.toLowerCase(), cmd);
+        }
+    }
+}
+
+// Registrar todos os comandos no inicializador
+register(who);
+register(where);
+register(look);
+register(take);
+register(drop);
+register(inventory);
+register(create);
+register(inspect);
+register(destroy);
+register(disconnect);
+register(rolesCommand);
+register(roleCommand);
+register(move);
+register(transfer);
+register(motd);
+register(descCommand);
+register(nodescCommand);
+
+// Comando especial para Sair
+register({
+    name: "sair",
+    aliases: ["/sair"],
+    async execute(player) {
+        player.socket.end();
+    }
+});
 
 export async function handleCommand(player, input, broadcast) {
-    if (input === "/motd") {
-        await handleMotdCommand(player);
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    // Identificar o primeiro token (o verbo do comando, ex: /pegar, /criar, /norte)
+    const parts = trimmed.split(/\s+/);
+    const verb = parts[0].toLowerCase();
+
+    // Buscar no mapa de comandos (pelo nome ou alias)
+    const cmd = commandMap.get(verb);
+    if (cmd) {
+        try {
+            await cmd.execute(player, trimmed, broadcast);
+        } catch (err) {
+            player.socket.write(`\nErro ao executar comando: ${err.message}\r\n\n`);
+        }
         return;
     }
 
-    if (input === "/quem") {
-        await handleWhoCommand(player);
+    // Se começar com '/' mas não corresponder a nenhum comando conhecido
+    if (trimmed.startsWith("/")) {
+        player.socket.write(`\nComando desconhecido: ${parts[0]}\r\n\n`);
         return;
     }
 
-    if (input === "/onde") {
-        await handleWhereCommand(player);
-        return;
-    }
-
-    if (input === "/ver") {
-        await handleLookCommand(player);
-        return;
-    }
-
-    if (input.startsWith("/pegar ")) {
-        await handleTakeCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/soltar ")) {
-        await handleDropCommand(player, input);
-        return;
-    }
-
-    if (input === "/inventario" || input === "/inv" || input === "/i") {
-        await handleInventoryCommand(player);
-        return;
-    }
-
-    if (input.startsWith("/criar")) {
-        await handleCreateCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/inspecionar")) {
-        await handleInspectCommand(player);
-        return;
-    }
-
-    if (input.startsWith("/destruir")) {
-        await handleDestroyCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/desconectar")) {
-        await handleDisconnectCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/roles")) {
-        await handleRolesCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/role ")) {
-        await handleRoleCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/desc")) {
-        await handlePlaceNameCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/nodesc")) {
-        await handleClearPlaceNameCommand(player, input);
-        return;
-    }
-
-    if (input.startsWith("/transf")) {
-        await handleTransferCommand(player, input);
-        return;
-    }
-
-    const moved = await handleMoveCommand(player, input);
-    if (moved) {
-        return;
-    }
-
-    if (input === "/sair") {
-        player.socket.end();
-        return;
-    }
-
+    // Caso não seja comando (não comece com '/'), envia como mensagem no chat
     broadcast(`${player.name}: ${input}\n`);
 }
+export { commandMap as commands };

@@ -8,3 +8,11 @@ export async function handleMotdCommand(player) {
         player.socket.write(`\nErro ao recuperar o MOTD: ${err.message}\r\n\n`);
     }
 }
+
+export const command = {
+    name: "motd",
+    aliases: ["/motd"],
+    async execute(player) {
+        await handleMotdCommand(player);
+    }
+};

@@ -116,3 +116,19 @@ export async function handleClearPlaceNameCommand(player, input) {
         player.socket.write(`\nErro ao remover descrição do local: ${err.message}\r\n\n`);
     }
 }
+
+export const descCommand = {
+    name: "desc",
+    aliases: ["/desc"],
+    async execute(player, input) {
+        await handlePlaceNameCommand(player, input);
+    }
+};
+
+export const nodescCommand = {
+    name: "nodesc",
+    aliases: ["/nodesc"],
+    async execute(player, input) {
+        await handleClearPlaceNameCommand(player, input);
+    }
+};

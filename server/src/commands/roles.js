@@ -111,3 +111,19 @@ export async function handleRoleCommand(player, input) {
         player.socket.write(`\nErro ao gerenciar role: ${err.message}\r\n\n`);
     }
 }
+
+export const rolesCommand = {
+    name: "roles",
+    aliases: ["/roles"],
+    async execute(player, input) {
+        await handleRolesCommand(player, input);
+    }
+};
+
+export const roleCommand = {
+    name: "role",
+    aliases: ["/role"],
+    async execute(player, input) {
+        await handleRoleCommand(player, input);
+    }
+};

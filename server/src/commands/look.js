@@ -15,3 +15,11 @@ export async function handleLookCommand(player) {
     const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
     player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
 }
+
+export const command = {
+    name: "ver",
+    aliases: ["/ver"],
+    async execute(player) {
+        await handleLookCommand(player);
+    }
+};

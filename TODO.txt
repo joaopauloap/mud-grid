@@ -1,0 +1,5 @@
+-Implementar os comandos:
+    /msg pm user msg
+    /msg all msg
+
+    /inspecionar

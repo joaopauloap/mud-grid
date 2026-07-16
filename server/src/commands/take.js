@@ -1,32 +1,42 @@
-import { savePlayerLocation } from "../game/index.js";
-import { saveLocationData, takeObjectFromLocation } from "../map/index.js";
+import { GameService } from "../services/gameService.js";
+import { getLocationData } from "../map/index.js";
 
-export async function handleTakeCommand(player, input) {
-    if (!player.location) {
-        player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
-        return;
+export const command = {
+    name: "pegar",
+    aliases: ["/pegar"],
+    async execute(player, input) {
+        if (!player.location) {
+            player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);
+            return;
+        }
+
+        const query = input.slice("/pegar".length).trim();
+        if (!query) {
+            player.socket.write(`\nUso: /pegar <objeto>\r\n\n`);
+            return;
+        }
+
+        const data = getLocationData(player.location);
+        if (!data || !data.objects) {
+            player.socket.write(`\nNão há '${query}' aqui.\r\n\n`);
+            return;
+        }
+
+        const item = data.objects.find(obj => 
+            obj.keyword.toLowerCase() === query.toLowerCase() || 
+            obj.name.toLowerCase() === query.toLowerCase()
+        );
+
+        if (!item) {
+            player.socket.write(`\nNão há '${query}' aqui.\r\n\n`);
+            return;
+        }
+
+        try {
+            await GameService.transferItemToPlayer(item, player.location, player);
+            player.socket.write(`\nVocê pegou: ${item.name}.\r\n\n`);
+        } catch (err) {
+            player.socket.write(`\nErro ao pegar o item: ${err.message}\r\n\n`);
+        }
     }
-
-    const query = input.slice(7).trim();
-    if (!query) {
-        player.socket.write(`\nUso: /pegar <objeto>\r\n\n`);
-        return;
-    }
-
-    const item = takeObjectFromLocation(player.location, query);
-    if (!item) {
-        player.socket.write(`\nNão há '${query}' aqui.\r\n\n`);
-        return;
-    }
-
-    player.inventory = player.inventory || [];
-    player.inventory.push(item);
-
-    try {
-        await savePlayerLocation(player.name, { x: player.location.x, y: player.location.y, inventory: player.inventory });
-        await saveLocationData(player.location);
-        player.socket.write(`\nVocê pegou: ${item.name}.\r\n\n`);
-    } catch (err) {
-        player.socket.write(`\nErro ao pegar o item: ${err.message}\r\n\n`);
-    }
-}
+};

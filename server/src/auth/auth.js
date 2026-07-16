@@ -1,5 +1,5 @@
 import * as game from "../game/index.js";
-import { describeLocation } from "../map/index.js";
+import { lookLocation } from "../map/index.js";
 import { playersAtLocation } from "../game/locationManager.js";
 
 export async function initAuth() {
@@ -92,7 +92,7 @@ async function sendLocationStatus(player, sendLine) {
         return;
     }
 
-    const locationText = describeLocation(player.location);
+    const locationText = lookLocation(player.location);
     const others = playersAtLocation(player.location, player.serverPlayers)
         .filter(p => p.id !== player.id)
         .map(p => p.name);
