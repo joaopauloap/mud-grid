@@ -3,7 +3,7 @@ import { getLocationData } from "../map/index.js";
 
 export const command = {
     name: "pegar",
-    aliases: ["/pegar"],
+    aliases: ["/pegar", "/take"],
     async execute(player, input) {
         if (!player.location) {
             player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);

@@ -119,3 +119,7 @@ export async function hasRole(username, role) {
 export async function getUserRoles(username) {
     return await RoleRepository.getUserRoles(username);
 }
+
+export async function getAllUsers() {
+    return await UserRepository.getAllUsers();
+}

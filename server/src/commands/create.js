@@ -11,7 +11,7 @@ function parseCoordinate(value) {
 
 export const command = {
     name: "criar",
-    aliases: ["/criar"],
+    aliases: ["/criar", "/create"],
     roles: ["admin"],
     async execute(player, input) {
         const tokens = parseCommandArgs(input.slice("/criar".length).trim());

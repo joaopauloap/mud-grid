@@ -5,6 +5,13 @@ const HOST = "localhost";
 const PORT = 999;
 
 
+// Entrada do jogador
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+
 const socket = net.createConnection(
     {
         host: HOST,
@@ -21,9 +28,16 @@ socket.setEncoding("utf8");
 
 // Mensagens vindas do servidor
 socket.on("data", data => {
+    // Limpa a linha atual que o jogador está digitando
+    readline.clearLine(process.stdout, 0);
+    readline.cursorTo(process.stdout, 0);
 
+    // Escreve a mensagem recebida do servidor
     process.stdout.write(data);
 
+    // Restaura o texto digitado até o momento e posiciona o cursor
+    process.stdout.write(rl.line);
+    readline.cursorTo(process.stdout, rl.cursor);
 });
 
 
@@ -48,18 +62,16 @@ socket.on("error", err => {
 });
 
 
-// Entrada do jogador
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-
-
 // envia cada linha digitada
 rl.on("line", line => {
-
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith("/")) {
+        // Move o cursor para cima 1 linha, limpa a linha e posiciona o cursor
+        readline.moveCursor(process.stdout, 0, -1);
+        readline.clearLine(process.stdout, 0);
+        readline.cursorTo(process.stdout, 0);
+    }
     socket.write(line + "\n");
-
 });
 
 

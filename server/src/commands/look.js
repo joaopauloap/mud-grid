@@ -18,7 +18,7 @@ export async function handleLookCommand(player) {
 
 export const command = {
     name: "ver",
-    aliases: ["/ver"],
+    aliases: ["/ver", "/look"],
     async execute(player) {
         await handleLookCommand(player);
     }

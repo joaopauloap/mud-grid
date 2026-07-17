@@ -9,6 +9,7 @@ const directionAliases = {
     "/nordeste": "ne",
     "/e": "e",
     "/leste": "e",
+    "/l":"e",
     "/se": "se",
     "/sudeste": "se",
     "/s": "s",
@@ -17,8 +18,9 @@ const directionAliases = {
     "/sudoeste": "sw",
     "/w": "w",
     "/oeste": "w",
+    "/o":"w",
     "/nw": "nw",
-    "/noroeste": "nw"
+    "/noroeste": "nw",
 };
 
 export async function handleMoveCommand(player, input) {

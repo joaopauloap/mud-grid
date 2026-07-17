@@ -4,7 +4,7 @@ import { hasRole } from "../game/index.js";
 
 export const command = {
     name: "onde",
-    aliases: ["/onde"],
+    aliases: ["/onde", "/where"],
     async execute(player) {
         if (!player.location) {
             player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);

@@ -2,7 +2,7 @@ import { GameService } from "../services/gameService.js";
 
 export const command = {
     name: "soltar",
-    aliases: ["/soltar"],
+    aliases: ["/soltar", "/drop"],
     async execute(player, input) {
         if (!player.location) {
             player.socket.write(`\nSua posição ainda não foi carregada.\r\n\n`);

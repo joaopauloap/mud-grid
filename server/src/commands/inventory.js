@@ -1,6 +1,6 @@
 export const command = {
     name: "inventario",
-    aliases: ["/inventario", "/inv", "/i"],
+    aliases: ["/inventario", "/inv", "/i", "/inventory"],
     async execute(player) {
         player.inventory = player.inventory || [];
         if (player.inventory.length === 0) {

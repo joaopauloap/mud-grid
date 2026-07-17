@@ -1,4 +1,4 @@
-import { run, get } from "../database/db.js";
+import { run, get, all } from "../database/db.js";
 
 export class UserRepository {
     static async userExists(username) {
@@ -36,5 +36,9 @@ export class UserRepository {
             JSON.stringify(location.inventory || []),
             username
         ]);
+    }
+
+    static async getAllUsers() {
+        return await all(`SELECT id, username, x, y, inventory FROM users`);
     }
 }

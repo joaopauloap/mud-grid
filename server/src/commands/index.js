@@ -13,6 +13,9 @@ import { command as move } from "./move.js";
 import { command as transfer } from "./transfer.js";
 import { command as motd } from "./motd.js";
 import { descCommand, nodescCommand } from "./placename.js";
+import { command as msg } from "./msg.js";
+import { command as usuarios } from "./users.js";
+import { command as objetos } from "./objects.js";
 import { hasRole } from "../game/index.js";
 
 // Mapa de comandos registrados
@@ -46,13 +49,26 @@ register(transfer);
 register(motd);
 register(descCommand);
 register(nodescCommand);
+register(msg);
+register(usuarios);
+register(objetos);
 
 // Comando especial para Sair
 register({
     name: "sair",
-    aliases: ["/sair"],
+    aliases: ["/sair", "/exit", "/quit"],
     async execute(player) {
         player.socket.end();
+    }
+});
+
+// Comando especial para Limpar o Terminal usando sequências de escape ANSI
+register({
+    name: "limpar",
+    aliases: ["/limpar", "/clear", "/cls"],
+    async execute(player) {
+        // Envia as sequências de escape ANSI para limpar a tela e mover o cursor para o topo
+        player.socket.write("\x1B[2J\x1B[H");
     }
 });
 
@@ -78,7 +94,7 @@ register({
             }
 
             const aliasesText = cmd.aliases && cmd.aliases.length > 0 
-                ? ` (aliases: ${cmd.aliases.join(", ")})` 
+                ? ` (${cmd.aliases.join(", ")})` 
                 : "";
             lines.push(`- ${cmd.name}${aliasesText}`);
         }
@@ -130,6 +146,6 @@ export async function handleCommand(player, input, broadcast) {
     }
 
     // Caso não seja comando (não comece com '/'), envia como mensagem no chat
-    broadcast(`\r\n\n${player.name} diz: ${input}\r\n\n`);
+    broadcast(`\r\n${player.name}: ${input}\r\n`);
 }
 export { commandMap as commands };

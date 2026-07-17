@@ -2,7 +2,7 @@ import { getAuthenticatedPlayer } from "./utils.js";
 
 export const command = {
     name: "desconectar",
-    aliases: ["/desconectar"],
+    aliases: ["/desconectar", "/dc", "/disconnect"],
     roles: ["admin"],
     async execute(player, input) {
         const args = input.trim().split(/\s+/);

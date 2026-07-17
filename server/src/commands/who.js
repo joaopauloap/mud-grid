@@ -1,6 +1,6 @@
 export const command = {
     name: "quem",
-    aliases: ["/quem"],
+    aliases: ["/quem", "/who"],
     async execute(player) {
         const names = [...player.serverPlayers.values()]
             .filter(p => p.authenticated)

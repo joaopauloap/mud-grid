@@ -3,7 +3,7 @@ import { GameService } from "../services/gameService.js";
 
 export const command = {
     name: "destruir",
-    aliases: ["/destruir"],
+    aliases: ["/destruir", "/destroy"],
     roles: ["admin"],
     async execute(player, input) {
         const args = input.trim().split(/\s+/);
