@@ -7,7 +7,7 @@ import { loadPlayerLocation } from "../game/locationManager.js";
 import { initWorld } from "../map/index.js";
 import { normalizeInput, write, sendLine, sendPrompt } from "./protocol.js";
 
-const PORT = 4000;
+const PORT = 999;
 let nextId = 1;
 
 function broadcast(message) {

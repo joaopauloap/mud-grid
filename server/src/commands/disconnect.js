@@ -1,16 +1,10 @@
-import { hasRole } from "../game/index.js";
 import { getAuthenticatedPlayer } from "./utils.js";
 
 export const command = {
     name: "desconectar",
     aliases: ["/desconectar"],
+    roles: ["admin"],
     async execute(player, input) {
-        const isAdmin = await hasRole(player.name, 'admin');
-        if (!isAdmin) {
-            player.socket.write(`\nPermissão negada.\r\n\n`);
-            return;
-        }
-
         const args = input.trim().split(/\s+/);
         if (args.length !== 2) {
             player.socket.write(`\nUso: /desconectar <usuario>\r\n\n`);

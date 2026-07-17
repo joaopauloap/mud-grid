@@ -1,5 +1,5 @@
 import { descriptions, getLocationData, saveLocationData, lookLocation } from "../map/index.js";
-import { savePlayerLocation, hasRole, getWorldObjectById, updateWorldObjectLocation } from "../game/index.js";
+import { savePlayerLocation, getWorldObjectById, updateWorldObjectLocation } from "../game/index.js";
 import { getAuthenticatedPlayer, parseCommandArgs } from "./utils.js";
 import { playersAtLocation } from "../game/locationManager.js";
 import { GameService } from "../services/gameService.js";
@@ -48,12 +48,6 @@ function findObjectInWorld(query) {
 }
 
 export async function handleTransferCommand(player, input) {
-    const isAdmin = await hasRole(player.name, 'admin');
-    if (!isAdmin) {
-        player.socket.write(`\nPermissão negada.\r\n\n`);
-        return true;
-    }
-
     const args = parseCommandArgs(input.slice("/transf".length).trim());
     if (args.length < 3) {
         player.socket.write(`\nUso: /transf <item|player> <id|nome> <coordenada|usuario>\r\n\n`);
@@ -197,6 +191,7 @@ export async function handleTransferCommand(player, input) {
 export const command = {
     name: "transf",
     aliases: ["/transf", "/transferir"],
+    roles: ["admin"],
     async execute(player, input) {
         await handleTransferCommand(player, input);
     }

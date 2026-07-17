@@ -85,12 +85,6 @@ export async function handleRoleCommand(player, input) {
     const target = parts[2];
     const role = parts[3];
 
-    const allowed = await hasRole(player.name, 'admin');
-    if (!allowed) {
-        player.socket.write(`\nPermissão negada.\r\n\n`);
-        return;
-    }
-
     try {
         if (action === 'add') {
             await createRole(role);
@@ -123,6 +117,7 @@ export const rolesCommand = {
 export const roleCommand = {
     name: "role",
     aliases: ["/role"],
+    roles: ["admin"],
     async execute(player, input) {
         await handleRoleCommand(player, input);
     }

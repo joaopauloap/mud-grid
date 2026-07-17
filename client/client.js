@@ -2,7 +2,7 @@ import net from "net";
 import readline from "readline";
 
 const HOST = "localhost";
-const PORT = 4000;
+const PORT = 999;
 
 
 const socket = net.createConnection(

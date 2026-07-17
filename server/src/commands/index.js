@@ -13,6 +13,7 @@ import { command as move } from "./move.js";
 import { command as transfer } from "./transfer.js";
 import { command as motd } from "./motd.js";
 import { descCommand, nodescCommand } from "./placename.js";
+import { hasRole } from "../game/index.js";
 
 // Mapa de comandos registrados
 const commandMap = new Map();
@@ -55,6 +56,40 @@ register({
     }
 });
 
+// Comando para listar todos os comandos dinamicamente
+register({
+    name: "comandos",
+    aliases: ["/comandos", "/commands", "/ajuda", "/help"],
+    async execute(player) {
+        const uniqueCommands = Array.from(new Set(commandMap.values()));
+        const lines = [];
+
+        for (const cmd of uniqueCommands) {
+            // Se o comando tiver restrição de roles, checar se o jogador possui alguma delas
+            if (cmd.roles && cmd.roles.length > 0) {
+                let authorized = false;
+                for (const role of cmd.roles) {
+                    if (await hasRole(player.name, role)) {
+                        authorized = true;
+                        break;
+                    }
+                }
+                if (!authorized) continue;
+            }
+
+            const aliasesText = cmd.aliases && cmd.aliases.length > 0 
+                ? ` (aliases: ${cmd.aliases.join(", ")})` 
+                : "";
+            lines.push(`- ${cmd.name}${aliasesText}`);
+        }
+
+        // Ordenar os comandos alfabeticamente para melhor visualização
+        lines.sort();
+
+        player.socket.write(`\nComandos disponíveis:\r\n${lines.join("\r\n")}\r\n\n`);
+    }
+});
+
 export async function handleCommand(player, input, broadcast) {
     const trimmed = input.trim();
     if (!trimmed) return;
@@ -66,6 +101,20 @@ export async function handleCommand(player, input, broadcast) {
     // Buscar no mapa de comandos (pelo nome ou alias)
     const cmd = commandMap.get(verb);
     if (cmd) {
+        if (cmd.roles && cmd.roles.length > 0) {
+            let authorized = false;
+            for (const r of cmd.roles) {
+                if (await hasRole(player.name, r)) {
+                    authorized = true;
+                    break;
+                }
+            }
+            if (!authorized) {
+                player.socket.write(`\nPermissão negada.\r\n\n`);
+                return;
+            }
+        }
+
         try {
             await cmd.execute(player, trimmed, broadcast);
         } catch (err) {
@@ -81,6 +130,6 @@ export async function handleCommand(player, input, broadcast) {
     }
 
     // Caso não seja comando (não comece com '/'), envia como mensagem no chat
-    broadcast(`${player.name}: ${input}\n`);
+    broadcast(`\r\n\n${player.name} diz: ${input}\r\n\n`);
 }
 export { commandMap as commands };

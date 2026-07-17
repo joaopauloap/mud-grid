@@ -1,4 +1,4 @@
-import { hasRole, saveWorldDescription, deleteWorldDescription } from "../game/index.js";
+import { saveWorldDescription, deleteWorldDescription } from "../game/index.js";
 import { descriptions } from "../map/index.js";
 import { parseCommandArgs } from "./utils.js";
 import { playersAtLocation } from "../game/locationManager.js";
@@ -12,12 +12,6 @@ function parseCoordinate(value) {
 }
 
 export async function handlePlaceNameCommand(player, input) {
-    const isAdmin = await hasRole(player.name, 'admin');
-    if (!isAdmin) {
-        player.socket.write(`\nPermissão negada.\r\n\n`);
-        return;
-    }
-
     const tokens = parseCommandArgs(input.slice("/desc".length).trim());
     if (tokens.length < 1) {
         player.socket.write(`\nUso: /desc [x,y] <cidade> <local> <ambiente> <descrição> ou /desc <cidade> <local> <ambiente> <descrição>\r\n\n`);
@@ -81,12 +75,6 @@ export async function handlePlaceNameCommand(player, input) {
 }
 
 export async function handleClearPlaceNameCommand(player, input) {
-    const isAdmin = await hasRole(player.name, 'admin');
-    if (!isAdmin) {
-        player.socket.write(`\nPermissão negada.\r\n\n`);
-        return;
-    }
-
     const tokens = parseCommandArgs(input.slice("/nodesc".length).trim());
     
     let coordinate;
@@ -120,6 +108,7 @@ export async function handleClearPlaceNameCommand(player, input) {
 export const descCommand = {
     name: "desc",
     aliases: ["/desc"],
+    roles: ["admin"],
     async execute(player, input) {
         await handlePlaceNameCommand(player, input);
     }
@@ -128,6 +117,7 @@ export const descCommand = {
 export const nodescCommand = {
     name: "nodesc",
     aliases: ["/nodesc"],
+    roles: ["admin"],
     async execute(player, input) {
         await handleClearPlaceNameCommand(player, input);
     }

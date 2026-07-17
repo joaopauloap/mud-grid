@@ -1,5 +1,12 @@
--Implementar os comandos:
+Implementar:
     /msg pm user msg
     /msg all msg
 
     /inspecionar
+
+
+
+
+
+BUGS:
+    corrigir chat bugado mensagens se sobrepoem

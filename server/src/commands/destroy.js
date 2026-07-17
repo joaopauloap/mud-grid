@@ -1,17 +1,11 @@
-import { hasRole } from "../game/index.js";
 import { playersAtLocation } from "../game/locationManager.js";
 import { GameService } from "../services/gameService.js";
 
 export const command = {
     name: "destruir",
     aliases: ["/destruir"],
+    roles: ["admin"],
     async execute(player, input) {
-        const isAdmin = await hasRole(player.name, 'admin');
-        if (!isAdmin) {
-            player.socket.write(`\nPermissão negada.\r\n\n`);
-            return;
-        }
-
         const args = input.trim().split(/\s+/);
         if (args.length !== 2) {
             player.socket.write(`\nUso: /destruir <id>\r\n\n`);

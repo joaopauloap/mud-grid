@@ -1,15 +1,10 @@
-import { hasRole, getAllWorldObjects } from "../game/index.js";
+import { getAllWorldObjects } from "../game/index.js";
 
 export const command = {
     name: "inspecionar",
     aliases: ["/inspecionar"],
+    roles: ["admin"],
     async execute(player) {
-        const isAdmin = await hasRole(player.name, 'admin');
-        if (!isAdmin) {
-            player.socket.write(`\nPermissão negada.\r\n\n`);
-            return;
-        }
-
         try {
             const objects = await getAllWorldObjects();
             if (objects.length === 0) {

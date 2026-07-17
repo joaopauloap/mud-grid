@@ -1,6 +1,5 @@
 import { playersAtLocation } from "../game/locationManager.js";
 import { GameService } from "../services/gameService.js";
-import { hasRole } from "../game/index.js";
 import { getAuthenticatedPlayer, parseCommandArgs } from "./utils.js";
 
 function parseCoordinate(value) {
@@ -13,13 +12,8 @@ function parseCoordinate(value) {
 export const command = {
     name: "criar",
     aliases: ["/criar"],
+    roles: ["admin"],
     async execute(player, input) {
-        const isAdmin = await hasRole(player.name, 'admin');
-        if (!isAdmin) {
-            player.socket.write(`\nPermissão negada.\r\n\n`);
-            return;
-        }
-
         const tokens = parseCommandArgs(input.slice("/criar".length).trim());
         if (tokens.length < 4) {
             player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [coordenada|usuario]\r\n\n`);
