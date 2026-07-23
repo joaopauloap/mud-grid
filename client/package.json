@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "main": "client.js",
+  "bin": "client.js",
   "scripts": {
-    "start": "node client.js"
+    "start": "node client.js",
+    "build": "pkg ."
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
   }
 }

@@ -1,14 +1,14 @@
 import { getAllWorldDescriptions, seedWorld, getAllWorldObjects } from "../game/index.js";
 
 export const directions = {
-    n: { dx: 0, dy: -1, label: "Norte" },
-    ne: { dx: 1, dy: -1, label: "Nordeste" },
+    n: { dx: 0, dy: 1, label: "Norte" },
+    ne: { dx: 1, dy: 1, label: "Nordeste" },
     e: { dx: 1, dy: 0, label: "Leste" },
-    se: { dx: 1, dy: 1, label: "Sudeste" },
-    s: { dx: 0, dy: 1, label: "Sul" },
-    sw: { dx: -1, dy: 1, label: "Sudoeste" },
+    se: { dx: 1, dy: -1, label: "Sudeste" },
+    s: { dx: 0, dy: -1, label: "Sul" },
+    sw: { dx: -1, dy: -1, label: "Sudoeste" },
     w: { dx: -1, dy: 0, label: "Oeste" },
-    nw: { dx: -1, dy: -1, label: "Noroeste" }
+    nw: { dx: -1, dy: 1, label: "Noroeste" }
 };
 
 const worldLocationDescription = new Map([

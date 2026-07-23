@@ -110,4 +110,5 @@ export async function init() {
     await run(`INSERT INTO roles (name) VALUES ('user') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('mod') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('admin') ON CONFLICT(name) DO NOTHING`);
+    await run(`INSERT INTO roles (name) VALUES ('gm') ON CONFLICT(name) DO NOTHING`);
 }

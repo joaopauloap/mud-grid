@@ -11,8 +11,8 @@ export async function handleAuthLine(player, input, callbacks) {
 
     if (player.stage === 'awaiting_username') {
         const username = input;
-        player.pendingUsername = username;
-        const exists = await game.userExists(username);
+        player.pendingUsername = username.toLowerCase();
+        const exists = await game.userExists(username.toLowerCase());
         if (exists) {
             player.stage = 'awaiting_password_login';
             sendLine(player.socket, `[Guardião]: Um usuário da Grade...`);
@@ -30,7 +30,7 @@ export async function handleAuthLine(player, input, callbacks) {
         const answer = input.toLowerCase();
         if (answer === 's' || answer === 'sim') {
             player.stage = 'awaiting_password_register';
-            sendLine(player.socket, `[Guardião]: Programas errantes sem disco de identificação estão sujeitos ao desafio da Grade!\r\n`);
+            sendLine(player.socket, `\r\n[Guardião]: Programas errantes sem disco de identificação estão sujeitos ao desafio da Grade!\r\n`);
             sendLine(player.socket, `[Guardião]: Deverá provar que pode desempenhar suas funções básicas, programa.\r\n`);
             sendLine(player.socket, `[Guardião]: Caso se classifique, será reintegrado ao sistema da Grade e receberá uma nova função. Do contrário, ou caso se recuse a obedecer, será submetido a destruição imediata.\r\n`);
             sendLine(player.socket, `Informe uma senha.`);
@@ -79,7 +79,7 @@ export async function handleAuthLine(player, input, callbacks) {
 
 async function completeAuthentication(player, broadcast, loadPlayerLocation, sendWelcome, sendLine) {
     player.authenticated = true;
-    player.name = player.pendingUsername;
+    player.name = player.pendingUsername.toLowerCase();
     broadcast(`[Sistema]: ${player.name} entrou na Grade.\r\n\n`);
     await loadPlayerLocation(player);
     await sendWelcome(player);
