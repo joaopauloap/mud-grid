@@ -1,5 +1,5 @@
 import { directions, lookLocation } from "../map/index.js";
-import { playersAtLocation } from "../game/locationManager.js";
+import { getPresentEntitiesText, playersAtLocation } from "../game/locationManager.js";
 import { GameService } from "../services/gameService.js";
 
 const directionAliases = {
@@ -9,7 +9,7 @@ const directionAliases = {
     "/nordeste": "ne",
     "/e": "e",
     "/leste": "e",
-    "/l":"e",
+    "/l": "e",
     "/se": "se",
     "/sudeste": "se",
     "/s": "s",
@@ -18,7 +18,7 @@ const directionAliases = {
     "/sudoeste": "sw",
     "/w": "w",
     "/oeste": "w",
-    "/o":"w",
+    "/o": "w",
     "/nw": "nw",
     "/noroeste": "nw",
 };
@@ -40,11 +40,7 @@ export async function handleMoveCommand(player, input) {
     player.socket.write(`\nVocê se move para ${label}.\r\n`);
 
     const locationText = lookLocation(player.location);
-    const others = playersAtLocation(player.location, player.serverPlayers)
-        .filter(p => p.id !== player.id)
-        .map(p => p.name);
-
-    const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
+    const othersText = await getPresentEntitiesText(player);
     player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
     return true;
 }

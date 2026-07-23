@@ -1,4 +1,4 @@
-import { playersAtLocation } from "../game/locationManager.js";
+import { getPresentEntitiesText } from "../game/locationManager.js";
 import { describeLocation } from "../map/index.js";
 import { hasRole } from "../game/index.js";
 
@@ -23,11 +23,7 @@ export const command = {
         }
 
         const locationText = describeLocation(player.location);
-        const others = playersAtLocation(player.location, player.serverPlayers)
-            .filter(p => p.id !== player.id)
-            .map(p => p.name);
-
-        const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
+        const othersText = await getPresentEntitiesText(player);
         player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
     }
 };

@@ -2,6 +2,8 @@ import { init as dbInit } from "../database/db.js";
 import { UserRepository } from "../repositories/userRepository.js";
 import { WorldRepository } from "../repositories/worldRepository.js";
 import { RoleRepository } from "../repositories/roleRepository.js";
+import { NpcRepository } from "../repositories/npcRepository.js";
+import { NpcDialogRepository } from "../repositories/npcDialogRepository.js";
 import { AuthService } from "../services/authService.js";
 
 export async function init() {
@@ -122,4 +124,56 @@ export async function getUserRoles(username) {
 
 export async function getAllUsers() {
     return await UserRepository.getAllUsers();
+}
+
+// --- NPC Functions ---
+
+export async function createNpc({ name, x, y }) {
+    return await NpcRepository.createNpc({ name, x, y });
+}
+
+export async function deleteNpc(id) {
+    return await NpcRepository.deleteNpc(id);
+}
+
+export async function getAllNpcs() {
+    return await NpcRepository.getAllNpcs();
+}
+
+export async function getNpcsByLocation(x, y) {
+    return await NpcRepository.getNpcsByLocation(x, y);
+}
+
+export async function getNpcById(id) {
+    return await NpcRepository.getNpcById(id);
+}
+
+export async function getNpcByName(name) {
+    return await NpcRepository.getNpcByName(name);
+}
+
+export async function updateNpcLocation(id, x, y) {
+    return await NpcRepository.updateNpcLocation(id, x, y);
+}
+
+// --- NPC Dialog Functions ---
+
+export async function setNpcDialog(npcId, trigger, response) {
+    return await NpcDialogRepository.setDialog(npcId, trigger, response);
+}
+
+export async function getNpcDialog(npcId, trigger) {
+    return await NpcDialogRepository.getDialog(npcId, trigger);
+}
+
+export async function getAllNpcDialogs(npcId) {
+    return await NpcDialogRepository.getAllDialogs(npcId);
+}
+
+export async function deleteNpcDialog(npcId, trigger) {
+    return await NpcDialogRepository.deleteDialog(npcId, trigger);
+}
+
+export async function findNpcResponse(npcId, playerText) {
+    return await NpcDialogRepository.findResponse(npcId, playerText);
 }

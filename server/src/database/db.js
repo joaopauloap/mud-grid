@@ -107,6 +107,38 @@ export async function init() {
     }
 
     // Default roles (to avoid circular dependency with RoleRepository during init, we can seed here directly or import)
+        await run(`CREATE TABLE IF NOT EXISTS npcs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        x INTEGER NOT NULL,
+        y INTEGER NOT NULL
+    )`);
+
+    // Migração: remove coluna keyword se existir (substituída por name)
+    const hasKeyword = await tableHasColumn('npcs', 'keyword');
+    if (hasKeyword) {
+        // SQLite não suporta DROP COLUMN diretamente em versões antigas,
+        // então recriamos a tabela sem a coluna keyword
+        await run(`CREATE TABLE npcs_new (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            x INTEGER NOT NULL,
+            y INTEGER NOT NULL
+        )`);
+        await run(`INSERT INTO npcs_new (id, name, x, y) SELECT id, name, x, y FROM npcs`);
+        await run(`DROP TABLE npcs`);
+        await run(`ALTER TABLE npcs_new RENAME TO npcs`);
+    }
+
+    await run(`CREATE TABLE IF NOT EXISTS npc_dialogs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        npc_id INTEGER NOT NULL,
+        trigger TEXT NOT NULL,
+        response TEXT NOT NULL,
+        UNIQUE(npc_id, trigger),
+        FOREIGN KEY(npc_id) REFERENCES npcs(id) ON DELETE CASCADE
+    )`);
+
     await run(`INSERT INTO roles (name) VALUES ('user') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('mod') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('admin') ON CONFLICT(name) DO NOTHING`);

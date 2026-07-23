@@ -1,4 +1,4 @@
-import { playersAtLocation } from "../game/locationManager.js";
+import { getPresentEntitiesText } from "../game/locationManager.js";
 import { lookLocation } from "../map/index.js";
 
 export async function handleLookCommand(player) {
@@ -8,11 +8,7 @@ export async function handleLookCommand(player) {
     }
 
     const locationText = lookLocation(player.location);
-    const others = playersAtLocation(player.location, player.serverPlayers)
-        .filter(p => p.id !== player.id)
-        .map(p => p.name);
-
-    const othersText = others.length > 0 ? `Também estão aqui: ${others.join(", ")}` : "Você está sozinho neste local.";
+    const othersText = await getPresentEntitiesText(player);
     player.socket.write(`\n${locationText}\n${othersText}\r\n\n`);
 }
 

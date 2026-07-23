@@ -10,12 +10,13 @@ import { command as destroy } from "./destroy.js";
 import { command as disconnect } from "./disconnect.js";
 import { rolesCommand, roleCommand } from "./roles.js";
 import { command as move } from "./move.js";
-import { command as transfer } from "./transfer.js";
+import { command as tp } from "./tp.js";
 import { command as motd } from "./motd.js";
 import { descCommand, nodescCommand } from "./placename.js";
 import { command as msg } from "./msg.js";
 import { command as usuarios } from "./users.js";
 import { command as objetos } from "./objects.js";
+import { command as npc } from "./npc.js";
 import { hasRole } from "../game/index.js";
 
 // Mapa de comandos registrados
@@ -45,13 +46,14 @@ register(disconnect);
 register(rolesCommand);
 register(roleCommand);
 register(move);
-register(transfer);
+register(tp);
 register(motd);
 register(descCommand);
 register(nodescCommand);
 register(msg);
 register(usuarios);
 register(objetos);
+register(npc);
 
 // Comando especial para Sair
 register({
