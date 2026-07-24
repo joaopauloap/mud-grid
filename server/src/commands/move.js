@@ -32,7 +32,7 @@ export async function handleMoveCommand(player, input) {
     try {
         await GameService.movePlayer(player, directionKey);
     } catch (err) {
-        player.socket.write(`\nNão foi possível salvar sua posição agora: ${err.message}\r\n\n`);
+        player.socket.write(`\n${err.message}\r\n\n`);
         return true;
     }
 

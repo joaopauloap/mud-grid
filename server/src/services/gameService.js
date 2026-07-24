@@ -1,7 +1,7 @@
 import { UserRepository } from "../repositories/userRepository.js";
 import { WorldRepository } from "../repositories/worldRepository.js";
 import { playersAtLocation } from "../game/locationManager.js";
-import { descriptions, movePosition, saveLocationData, lookLocation } from "../map/index.js";
+import { descriptions, movePosition, saveLocationData, lookLocation, getLocationData } from "../map/index.js";
 
 export class GameService {
     /**
@@ -14,6 +14,12 @@ export class GameService {
 
         const oldLocation = { ...player.location };
         const newLocation = movePosition(player.location, directionKey);
+
+        // Verifica se o destino existe no mundo (foi registrado)
+        const locationData = getLocationData(newLocation);
+        if (!locationData) {
+            throw new Error("Não há nada nessa direção.");
+        }
 
         // Atualiza em memória temporariamente
         player.location = newLocation;
@@ -66,7 +72,7 @@ export class GameService {
             city: "Grade",
             place: "Local desconhecido",
             environment: "Área sem descrição",
-            description: "Este local ainda não foi descrito.",
+            description: "Este local ainda não foi descoberto.",
             objects: []
         };
 
@@ -203,7 +209,7 @@ export class GameService {
                 city: "Grade",
                 place: "Local desconhecido",
                 environment: "Área sem descrição",
-                description: "Este local ainda não foi descrito.",
+                description: "Este local ainda não foi descoberto.",
                 objects: []
             };
 

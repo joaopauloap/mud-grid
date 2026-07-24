@@ -10,6 +10,9 @@ export class Player {
         this.serverPlayers = playersMap;
         this.location = null;
         this.inventory = [];
+        // Estado de diálogo com NPC (árvore)
+        // { npcId, npcName, nodeId, treeId }
+        this.dialogState = null;
     }
 
     write(text) {
@@ -42,5 +45,24 @@ export class Player {
 
         if (index === -1) return null;
         return this.inventory.splice(index, 1)[0];
+    }
+
+    // --- Diálogo com NPC ---
+
+    /** Inicia ou retoma diálogo com um NPC */
+    startDialog(npcId, npcName, nodeId, treeId) {
+        this.dialogState = { npcId, npcName, nodeId, treeId };
+    }
+
+    /** Cancela o diálogo ativo */
+    cancelDialog() {
+        this.dialogState = null;
+    }
+
+    /** Retorna true se estiver em diálogo ativo com um NPC específico (ou qualquer, se npcId omitido) */
+    isInDialog(npcId) {
+        if (!this.dialogState) return false;
+        if (npcId !== undefined) return this.dialogState.npcId === npcId;
+        return true;
     }
 }

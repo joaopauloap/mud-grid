@@ -45,10 +45,11 @@ export async function init() {
         salt TEXT,
         x INTEGER DEFAULT 0,
         y INTEGER DEFAULT 0,
-        inventory TEXT DEFAULT '[]'
+        inventory TEXT DEFAULT '[]',
+        created_at TEXT DEFAULT (datetime('now', 'localtime'))
     )`);
 
-    // Adiciona as colunas na tabela users se ela já existia antes sem elas
+    // Migração: adiciona colunas auxiliares se a tabela já existia sem elas
     const hasX = await tableHasColumn('users', 'x');
     if (!hasX) {
         await run(`ALTER TABLE users ADD COLUMN x INTEGER DEFAULT 0`);
@@ -60,6 +61,10 @@ export async function init() {
     const hasInventory = await tableHasColumn('users', 'inventory');
     if (!hasInventory) {
         await run(`ALTER TABLE users ADD COLUMN inventory TEXT DEFAULT '[]'`);
+    }
+    const hasCreatedAt = await tableHasColumn('users', 'created_at');
+    if (!hasCreatedAt) {
+        await run(`ALTER TABLE users ADD COLUMN created_at TEXT DEFAULT (datetime('now', 'localtime'))`);
     }
 
     await run(`CREATE TABLE IF NOT EXISTS game_params (
@@ -76,6 +81,17 @@ export async function init() {
         description TEXT,
         PRIMARY KEY(x,y)
     )`);
+
+    // Seed inicial do mundo
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (0, 0, 'Grade', 'Portal da Grade', 'Plataforma do portal', 'Você está na plataforma do portal da Grade, cercada por colunas brilhantes e painéis de energia.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (0, -1, 'Grade', 'Corredor Antigo', 'Corredor sombrio', 'Você está em um corredor sombrio com inscrições antigas nas paredes de metal.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (1, 0, 'Grade', 'Ponte dos Arestos', 'Ponte suspensa', 'Você vê uma ponte suspendida sobre um fosso de energia azul.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (-1, 0, 'Grade', 'Câmara de Cristal', 'Câmara silenciosa', 'Você vê uma câmara silenciosa com cristais pulsando levemente.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (0, 1, 'Grade', 'Salão do Núcleo', 'Salão com parapeitos', 'Você vê um salão com parapeitos e janelas que mostram as luzes do núcleo.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (1, -1, 'Grade', 'Escadaria Espiral', 'Escadaria em espiral', 'Você vê uma escadaria em espiral que sobe em direção a um domo de vidro.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (-1, -1, 'Grade', 'Jardim Bioluminescente', 'Jardim interno', 'Você vê um jardim interno com plantas bioluminescentes.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (1, 1, 'Grade', 'Laboratório Abandonado', 'Laboratório', 'Você vê um laboratório abandonado com mesas cobertas por artefatos.')`);
+    await run(`INSERT OR IGNORE INTO world_places (x, y, city, place, environment, description) VALUES (-1, 1, 'Grade', 'Depósito', 'Depósito', 'Você vê um depósito cheio de caixas retorcidas e caminhos estreitos.')`);
 
     await run(`CREATE TABLE IF NOT EXISTS world_objects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,7 +123,7 @@ export async function init() {
     }
 
     // Default roles (to avoid circular dependency with RoleRepository during init, we can seed here directly or import)
-        await run(`CREATE TABLE IF NOT EXISTS npcs (
+    await run(`CREATE TABLE IF NOT EXISTS npcs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
         x INTEGER NOT NULL,
@@ -138,6 +154,114 @@ export async function init() {
         UNIQUE(npc_id, trigger),
         FOREIGN KEY(npc_id) REFERENCES npcs(id) ON DELETE CASCADE
     )`);
+
+    // --- Sistema de Árvore de Diálogos (Dialog Tree) ---
+    await run(`CREATE TABLE IF NOT EXISTS dialog_trees (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        npc_id INTEGER UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        FOREIGN KEY(npc_id) REFERENCES npcs(id) ON DELETE CASCADE
+    )`);
+
+    await run(`CREATE TABLE IF NOT EXISTS dialog_nodes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tree_id INTEGER NOT NULL,
+        parent_id INTEGER,
+        trigger TEXT NOT NULL,
+        npc_response TEXT NOT NULL,
+        npc_hint TEXT,
+        sort_order INTEGER DEFAULT 0,
+        flags TEXT DEFAULT '',
+        condition_type TEXT,
+        condition_value TEXT,
+        action_commands TEXT DEFAULT '[]',
+        FOREIGN KEY(tree_id) REFERENCES dialog_trees(id) ON DELETE CASCADE,
+        FOREIGN KEY(parent_id) REFERENCES dialog_nodes(id) ON DELETE SET NULL
+    )`);
+
+    // Migração: adiciona coluna action_commands se não existir
+    const hasActionCmds = await tableHasColumn('dialog_nodes', 'action_commands');
+    if (!hasActionCmds) {
+        await run(`ALTER TABLE dialog_nodes ADD COLUMN action_commands TEXT DEFAULT '[]'`);
+    }
+
+    // --- Seed NPC Guard e sua árvore de diálogo ---
+    await run(`INSERT OR IGNORE INTO npcs (name, x, y) VALUES ('Guard', 0, 0)`);
+
+    // Só cria a árvore se o Guard ainda não tiver uma
+    const hasGuardTree = await get(
+        `SELECT dt.id FROM dialog_trees dt JOIN npcs n ON dt.npc_id = n.id WHERE n.name = 'Guard'`
+    );
+    if (!hasGuardTree) {
+        await run(
+            `INSERT INTO dialog_trees (npc_id, name) VALUES ((SELECT id FROM npcs WHERE name = 'Guard'), 'ArvoreGuard')`
+        );
+        const { id: treeId } = await get(
+            `SELECT dt.id FROM dialog_trees dt JOIN npcs n ON dt.npc_id = n.id WHERE n.name = 'Guard'`
+        );
+        // Nó raiz sem condição (fallback) — player ainda não tem o disco
+        await run(
+            `INSERT INTO dialog_nodes (tree_id, parent_id, trigger, npc_response, flags)
+             VALUES (?, NULL, 'oi', 'Encontre CLU no setor 0-1 ao */norte* e requisite um novo ''Disco''.', 'greeting,goodbye')`,
+            [treeId]
+        );
+        // Nó raiz condicionado — player já possui o disco 'disco'
+        await run(
+            `INSERT INTO dialog_nodes (tree_id, parent_id, trigger, npc_response, flags, condition_type, condition_value, action_commands)
+             VALUES (?, NULL, 'oi', 'Disco concedido e sincronizado. Deves enfrentar o desafio da Grade imediatamente. Me acompanhe.', 'greeting,goodbye', 'has_item', 'disco', ?)`,
+            [treeId]
+        );
+    }
+
+    // --- Seed NPC CLU na coordenada (0,1) ---
+    await run(`INSERT OR IGNORE INTO npcs (name, x, y) VALUES ('CLU', 0, 1)`);
+
+    const hasCluTree = await get(
+        `SELECT dt.id FROM dialog_trees dt JOIN npcs n ON dt.npc_id = n.id WHERE n.name = 'CLU'`
+    );
+    if (!hasCluTree) {
+        await run(
+            `INSERT INTO dialog_trees (npc_id, name) VALUES ((SELECT id FROM npcs WHERE name = 'CLU'), 'ArvoreCLU')`
+        );
+        const { id: treeId } = await get(
+            `SELECT dt.id FROM dialog_trees dt JOIN npcs n ON dt.npc_id = n.id WHERE n.name = 'CLU'`
+        );
+
+        // Root 1: player já tem disco → saudação curta e encerra
+        await run(
+            `INSERT INTO dialog_nodes (tree_id, parent_id, trigger, npc_response, flags, condition_type, condition_value)
+             VALUES (?, NULL, 'oi', 'Saudações, programa. Eu sou CLU.', 'greeting,goodbye', 'has_item', 'disco')`,
+            [treeId]
+        );
+
+        // Root 2: sem disco (fallback) → saudação, aguarda player falar "disco"
+        await run(
+            `INSERT INTO dialog_nodes (tree_id, parent_id, trigger, npc_response, flags)
+             VALUES (?, NULL, 'oi', 'Saudações, programa. Eu sou CLU.', 'greeting')`,
+            [treeId]
+        );
+
+        // ID do Root 2 para adicionar filhos
+        const { id: root2Id } = await get(
+            `SELECT id FROM dialog_nodes WHERE tree_id = ? AND parent_id IS NULL AND condition_type IS NULL`,
+            [treeId]
+        );
+
+        // Único filho: trigger "disco" → concede novo disco
+        await run(
+            `INSERT INTO dialog_nodes (tree_id, parent_id, trigger, npc_response, flags, action_commands)
+             VALUES (?, ?, 'disco', 'Você perdeu seu Disco de Identificação? Entendo. Lhe concenderei um novo Disco.', 'goodbye', ?)`,
+            [treeId, root2Id, JSON.stringify([
+                {
+                    type: 'give_item',
+                    keyword: 'disco',
+                    name: 'Disco de Identificação',
+                    description: 'Disco de identificação padrão dos programas da Grade. Guarda informações sobre identificação, diretriz, funções, conquistas e histórico de seu titular.'
+                },
+                { type: 'broadcast', message: 'Retorne ao Guardião.' }
+            ])]
+        );
+    }
 
     await run(`INSERT INTO roles (name) VALUES ('user') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('mod') ON CONFLICT(name) DO NOTHING`);

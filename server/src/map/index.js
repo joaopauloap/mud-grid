@@ -11,97 +11,10 @@ export const directions = {
     nw: { dx: -1, dy: 1, label: "Noroeste" }
 };
 
-const worldLocationDescription = new Map([
-    ["0,0", {
-        city: "Grade",
-        place: "Portal da Grade",
-        environment: "Plataforma do portal",
-        description: "Você está na plataforma do portal da Grade, cercada por colunas brilhantes e painéis de energia.",
-        objects: [
-            { id: "moeda", name: "Moeda", type: "item", description: "Uma moeda escura contendo a inscrição 'C.L.U' em neon vermelho" },
-        ]
-    }],
-    ["0,-1", {
-        city: "Grade",
-        place: "Corredor Antigo",
-        environment: "Corredor sombrio",
-        description: "Você está em um corredor sombrio com inscrições antigas nas paredes de metal.",
-        objects: [
-            { id: "tocha", name: "Tocha", type: "item", description: "Uma tocha apagada presa à parede." }
-        ]
-    }],
-    [["1,0"].join(","), {
-        city: "Grade",
-        place: "Ponte dos Arestos",
-        environment: "Ponte suspensa",
-        description: "Você vê uma ponte suspendida sobre um fosso de energia azul.",
-        objects: [
-            { id: "corrente", name: "Corrente", type: "furniture", description: "Uma corrente pesada presa às laterais da ponte." }
-        ]
-    }],
-    [["-1,0"].join(","), {
-        city: "Grade",
-        place: "Câmara de Cristal",
-        environment: "Câmara silenciosa",
-        description: "Você vê uma câmara silenciosa com cristais pulsando levemente.",
-        objects: []
-    }],
-    [["0,1"].join(","), {
-        city: "Grade",
-        place: "Salão do Núcleo",
-        environment: "Salão com parapeitos",
-        description: "Você vê um salão com parapeitos e janelas que mostram as luzes do núcleo.",
-        objects: [
-            { id: "cadeira", name: "Cadeira", type: "furniture", description: "Uma cadeira de madeira antiga." }
-        ]
-    }],
-    [["1,-1"].join(","), {
-        city: "Grade",
-        place: "Escadaria Espiral",
-        environment: "Escadaria em espiral",
-        description: "Você vê uma escadaria em espiral que sobe em direção a um domo de vidro.",
-        objects: []
-    }],
-    [["-1,-1"].join(","), {
-        city: "Grade",
-        place: "Jardim Bioluminescente",
-        environment: "Jardim interno",
-        description: "Você vê um jardim interno com plantas bioluminescentes.",
-        objects: [
-            { id: "planta", name: "Planta Bioluminescente", type: "flora", description: "Uma planta que emite luz fraca." }
-        ]
-    }],
-    [["1,1"].join(","), {
-        city: "Grade",
-        place: "Laboratório Abandonado",
-        environment: "Laboratório",
-        description: "Você vê um laboratório abandonado com mesas cobertas por artefatos.",
-        objects: [
-            { id: "frasco", name: "Frasco Quebrado", type: "item", description: "Um frasco de vidro quebrado com líquidos secos." }
-        ]
-    }],
-    [["-1,1"].join(","), {
-        city: "Grade",
-        place: "Depósito",
-        environment: "Depósito",
-        description: "Você vê um depósito cheio de caixas retorcidas e caminhos estreitos.",
-        objects: [
-            { id: "caixa", name: "Caixa Estranha", type: "container", description: "Uma caixa de metal fechada com um cadeado." }
-        ]
-    }]
-]);
-
-const defaultSeed = Array.from(worldLocationDescription.entries()).map(([k, data]) => {
-    const [x, y] = k.split(",").map(Number);
-    return { x, y, city: data.city, place: data.place, environment: data.environment, description: data.description };
-});
+const worldLocationDescription = new Map();
 
 export async function initWorld() {
-    let rows = await getAllWorldDescriptions();
-    if (!rows || rows.length === 0) {
-        await seedWorld(defaultSeed);
-        rows = await getAllWorldDescriptions();
-    }
+    const rows = await getAllWorldDescriptions();
 
     worldLocationDescription.clear();
     for (const r of rows) {

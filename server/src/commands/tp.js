@@ -22,7 +22,7 @@ function ensureLocationData(location) {
         city: "Grade",
         place: "Local desconhecido",
         environment: "Área sem descrição",
-        description: "Este local ainda não foi descrito.",
+        description: "Este local ainda não foi descoberto.",
         objects: []
     };
     descriptions.set(key, data);

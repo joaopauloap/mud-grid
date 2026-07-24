@@ -4,6 +4,7 @@ import { WorldRepository } from "../repositories/worldRepository.js";
 import { RoleRepository } from "../repositories/roleRepository.js";
 import { NpcRepository } from "../repositories/npcRepository.js";
 import { NpcDialogRepository } from "../repositories/npcDialogRepository.js";
+import { DialogTreeRepository } from "../repositories/dialogTreeRepository.js";
 import { AuthService } from "../services/authService.js";
 
 export async function init() {
@@ -176,4 +177,82 @@ export async function deleteNpcDialog(npcId, trigger) {
 
 export async function findNpcResponse(npcId, playerText) {
     return await NpcDialogRepository.findResponse(npcId, playerText);
+}
+
+// --- Dialog Tree Functions ---
+
+export async function createDialogTree(npcId, name) {
+    return await DialogTreeRepository.createTree(npcId, name);
+}
+
+export async function getDialogTreeByNpcId(npcId) {
+    return await DialogTreeRepository.getTreeByNpcId(npcId);
+}
+
+export async function getDialogTreeById(treeId) {
+    return await DialogTreeRepository.getTreeById(treeId);
+}
+
+export async function deleteDialogTreeByNpcId(npcId) {
+    return await DialogTreeRepository.deleteTreeByNpcId(npcId);
+}
+
+export async function addDialogNode(treeId, parentId, trigger, npcResponse, opts) {
+    return await DialogTreeRepository.addNode(treeId, parentId, trigger, npcResponse, opts);
+}
+
+export async function getDialogTreeNodes(treeId) {
+    return await DialogTreeRepository.getTreeNodes(treeId);
+}
+
+export async function getDialogRootNodes(treeId) {
+    return await DialogTreeRepository.getRootNodes(treeId);
+}
+
+export async function getDialogChildNodes(nodeId) {
+    return await DialogTreeRepository.getChildNodes(nodeId);
+}
+
+export async function findDialogChildByTrigger(parentNodeId, playerText) {
+    return await DialogTreeRepository.findChildByTrigger(parentNodeId, playerText);
+}
+
+export async function getDialogNodeById(nodeId) {
+    return await DialogTreeRepository.getNodeById(nodeId);
+}
+
+export async function updateDialogNodeTrigger(nodeId, newTrigger) {
+    return await DialogTreeRepository.updateNodeTrigger(nodeId, newTrigger);
+}
+
+export async function updateDialogNodeResponse(nodeId, newResponse) {
+    return await DialogTreeRepository.updateNodeResponse(nodeId, newResponse);
+}
+
+export async function updateDialogNodeHint(nodeId, hint) {
+    return await DialogTreeRepository.updateNodeHint(nodeId, hint);
+}
+
+export async function updateDialogNodeFlags(nodeId, flags) {
+    return await DialogTreeRepository.updateNodeFlags(nodeId, flags);
+}
+
+export async function updateDialogNodeCondition(nodeId, conditionType, conditionValue) {
+    return await DialogTreeRepository.updateNodeCondition(nodeId, conditionType, conditionValue);
+}
+
+export async function updateDialogNodeActions(nodeId, actionCommandsJson) {
+    return await DialogTreeRepository.updateNodeActions(nodeId, actionCommandsJson);
+}
+
+export async function deleteDialogNode(nodeId) {
+    return await DialogTreeRepository.deleteNode(nodeId);
+}
+
+export async function findDialogNodeByTrigger(treeId, trigger) {
+    return await DialogTreeRepository.findNodeByTrigger(treeId, trigger);
+}
+
+export async function getDialogTreeAsText(treeId) {
+    return await DialogTreeRepository.getTreeAsText(treeId);
 }

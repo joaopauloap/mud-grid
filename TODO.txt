@@ -1,1 +1,3 @@
 Implementar:
+    -Exibir mensagens nos dialogos com npcs;
+    -adicionar prop de permissão no item para indicar se pode ser pego ou solto, e por quem pode ser pego;

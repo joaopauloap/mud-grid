@@ -20,3 +20,5 @@ export function getAuthenticatedPlayer(serverPlayers, username) {
     const player = getPlayerByName(serverPlayers, username);
     return player && player.authenticated ? player : null;
 }
+
+export const delay = ms => new Promise(res => setTimeout(res, ms));
