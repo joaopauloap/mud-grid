@@ -1,0 +1,47 @@
+{
+  "name": "CLU",
+  "x": 0,
+  "y": 1,
+  "dialogTree": {
+    "name": "ArvoreCLU",
+    "nodes": [
+      {
+        "trigger": "oi",
+        "response": "Saudações, programa. Eu sou CLU.",
+        "flags": "greeting,goodbye",
+        "condition": {
+          "type": "has_item",
+          "value": "disco"
+        }
+      },
+      {
+        "trigger": "oi",
+        "response": "Saudações, programa. Eu sou CLU.",
+        "flags": "greeting",
+        "children": [
+          {
+            "trigger": "disco",
+            "response": "O que temos aqui... Um programa errante sem Disco de Identificação?",
+            "flags": "goodbye",
+            "actions": [
+              {
+                "type": "give_item",
+                "keyword": "disco",
+                "name": "Disco de Identificação",
+                "description": "Disco de identificação padrão dos programas da Grade. Guarda informações sobre identificação, diretriz, funções, conquistas e histórico de seu titular."
+              },
+              {
+                "type": "broadcast",
+                "message": "Retorne ao Guardião."
+              },
+              {
+                "type": "broadcast",
+                "message": "Adeus. EOL"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

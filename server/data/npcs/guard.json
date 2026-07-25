@@ -1,0 +1,24 @@
+{
+  "name": "Guard",
+  "x": 0,
+  "y": 0,
+  "dialogTree": {
+    "name": "ArvoreGuard",
+    "nodes": [
+      {
+        "trigger": "oi",
+        "response": "Encontre CLU no setor 0-1 ao */norte* e requisite um novo 'Disco'.",
+        "flags": "greeting,goodbye"
+      },
+      {
+        "trigger": "oi",
+        "response": "Disco concedido e sincronizado. Deves enfrentar o desafio da Grade imediatamente. Me acompanhe.",
+        "flags": "greeting,goodbye",
+        "condition": {
+          "type": "has_item",
+          "value": "disco"
+        }
+      }
+    ]
+  }
+}

@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import {
     createNpc, deleteNpc, getAllNpcs, getNpcByName, getNpcById,
     createDialogTree, getDialogTreeByNpcId, deleteDialogTreeByNpcId,
@@ -10,6 +12,8 @@ import {
     findDialogNodeByTrigger, getDialogTreeAsText
 } from "../game/index.js";
 import { parseCommandArgs } from "./utils.js";
+
+const NPC_DATA_DIR = path.resolve(process.cwd(), "data", "npcs");
 
 function parseCoordinate(value) {
     if (!value) return null;
@@ -562,6 +566,209 @@ async function treeAction(player, npc, input, args) {
     }
 }
 
+// ======================== IMPORT JSON ========================
+
+/**
+ * Valida a estrutura básica do JSON de NPC.
+ */
+function validateNpcJson(data) {
+    if (!data || typeof data !== 'object') throw new Error('JSON deve conter um objeto.');
+    if (!data.name || typeof data.name !== 'string') throw new Error('"name" (string) é obrigatório.');
+    if (data.x !== undefined && (typeof data.x !== 'number' || !Number.isInteger(data.x)))
+        throw new Error('"x" deve ser um número inteiro.');
+    if (data.y !== undefined && (typeof data.y !== 'number' || !Number.isInteger(data.y)))
+        throw new Error('"y" deve ser um número inteiro.');
+    if (data.dialogTree !== undefined) {
+        if (typeof data.dialogTree !== 'object') throw new Error('"dialogTree" deve ser um objeto.');
+        if (!data.dialogTree.name || typeof data.dialogTree.name !== 'string')
+            throw new Error('"dialogTree.name" (string) é obrigatório.');
+        if (data.dialogTree.nodes !== undefined && !Array.isArray(data.dialogTree.nodes))
+            throw new Error('"dialogTree.nodes" deve ser um array.');
+    }
+}
+
+/**
+ * Importa um NPC com árvore de diálogo completa a partir de um arquivo JSON.
+ * O arquivo deve estar em data/npcs/<arquivo.json>
+ *
+ * Estrutura esperada do JSON:
+ * {
+ *   "name": "NomeDoNPC",
+ *   "x": 0,
+ *   "y": 0,
+ *   "dialogTree": {
+ *     "name": "NomeDaArvore",
+ *     "nodes": [
+ *       {
+ *         "trigger": "oi",
+ *         "response": "Olá, aventureiro!",
+ *         "hint": "Dica para o jogador",
+ *         "flags": "greeting,goodbye",
+ *         "condition": { "type": "has_item", "value": "chave" },
+ *         "actions": [
+ *           { "type": "give_item", "keyword": "espada", "name": "Espada", "description": "Uma espada." },
+ *           { "type": "remove_item", "keyword": "chave" },
+ *           { "type": "teleport", "x": 5, "y": 3 },
+ *           { "type": "broadcast", "message": "Mensagem pública!" }
+ *         ],
+ *         "children": [ ... ]
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+async function handleImport(player, input, args) {
+    if (args.length < 3) {
+        player.socket.write(`\r\nUso: /npc import <arquivo.json>\r\n`);
+        player.socket.write(`  O arquivo deve estar em: ${NPC_DATA_DIR}/<arquivo.json>\r\n\n`);
+        return;
+    }
+
+    const fileName = args[2];
+    // Garante extensão .json
+    const jsonFile = fileName.endsWith('.json') ? fileName : `${fileName}.json`;
+    const filePath = path.join(NPC_DATA_DIR, jsonFile);
+
+    // Lê o arquivo
+    let raw;
+    try {
+        raw = fs.readFileSync(filePath, 'utf-8');
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            player.socket.write(`\r\nArquivo não encontrado: ${filePath}\r\n`);
+            player.socket.write(`  Crie o diretório '${NPC_DATA_DIR}' e coloque o JSON lá.\r\n\n`);
+        } else {
+            player.socket.write(`\r\nErro ao ler arquivo: ${err.message}\r\n\n`);
+        }
+        return;
+    }
+
+    // Parse JSON
+    let data;
+    try {
+        data = JSON.parse(raw);
+    } catch (err) {
+        player.socket.write(`\r\nErro ao fazer parse do JSON: ${err.message}\r\n\n`);
+        return;
+    }
+
+    // Valida estrutura
+    try {
+        validateNpcJson(data);
+    } catch (err) {
+        player.socket.write(`\r\nEstrutura do JSON inválida: ${err.message}\r\n\n`);
+        return;
+    }
+
+    // Verifica se já existe NPC com este nome
+    const existing = await getNpcByName(data.name);
+    if (existing) {
+        player.socket.write(`\r\nJá existe um NPC com o nome '${data.name}' (ID: ${existing.id}). Use /npc delete ${data.name} primeiro ou escolha outro nome.\r\n\n`);
+        return;
+    }
+
+    // Posição: usa o que veio do JSON, ou (0,0)
+    const x = data.x !== undefined ? data.x : 0;
+    const y = data.y !== undefined ? data.y : 0;
+
+    try {
+        // 1. Cria o NPC
+        const npc = await createNpc({ name: data.name, x, y });
+        player.socket.write(`✓ NPC '${npc.name}' criado (ID: ${npc.id}) em (${npc.x}, ${npc.y}).\r\n`);
+
+        // 2. Se tiver dialogTree, processa
+        if (data.dialogTree) {
+            const tree = await createDialogTree(npc.id, data.dialogTree.name);
+            player.socket.write(`✓ Árvore de diálogo '${tree.name}' criada (ID: ${tree.id}).\r\n`);
+
+            if (data.dialogTree.nodes && data.dialogTree.nodes.length > 0) {
+                let totalNodes = 0;
+
+                // Processa cada nó raiz e seus filhos recursivamente
+                for (const rootNode of data.dialogTree.nodes) {
+                    totalNodes += await importDialogNode(tree.id, null, rootNode);
+                }
+
+                player.socket.write(`✓ ${totalNodes} nó(s) de diálogo importado(s).\r\n`);
+            }
+        }
+
+        player.socket.write(`\r\nNPC '${data.name}' importado com sucesso!\r\n\n`);
+
+    } catch (err) {
+        player.socket.write(`\r\nErro ao importar NPC: ${err.message}\r\n\n`);
+    }
+}
+
+/**
+ * Importa recursivamente um nó de diálogo a partir de um objeto JSON.
+ *
+ * @param {number} treeId - ID da árvore
+ * @param {number|null} parentId - ID do nó pai (null para raiz)
+ * @param {object} nodeData - Dados do nó no JSON
+ * @returns {Promise<number>} - Total de nós criados (incluindo filhos)
+ */
+async function importDialogNode(treeId, parentId, nodeData) {
+    const trigger = (nodeData.trigger || '').toLowerCase();
+    const response = nodeData.response || '';
+    const hint = nodeData.hint || null;
+
+    // Flags: se vier como array, converte para string separada por vírgulas
+    let flags = '';
+    if (nodeData.flags) {
+        flags = Array.isArray(nodeData.flags) ? nodeData.flags.join(',') : String(nodeData.flags);
+    }
+
+    // Condition
+    let conditionType = null;
+    let conditionValue = null;
+    if (nodeData.condition) {
+        conditionType = nodeData.condition.type || null;
+        conditionValue = nodeData.condition.value || null;
+    }
+
+    // Actions: valida e serializa
+    let actionsJson = '[]';
+    if (nodeData.actions && Array.isArray(nodeData.actions)) {
+        // Valida cada ação
+        for (const action of nodeData.actions) {
+            if (!action.type) {
+                throw new Error(`Ação sem "type": ${JSON.stringify(action)}`);
+            }
+            const validTypes = ['give_item', 'remove_item', 'teleport', 'broadcast'];
+            if (!validTypes.includes(action.type)) {
+                throw new Error(`Tipo de ação inválido: "${action.type}". Válidos: ${validTypes.join(', ')}`);
+            }
+        }
+        actionsJson = JSON.stringify(nodeData.actions);
+    }
+
+    // Cria o nó
+    const node = await addDialogNode(treeId, parentId, trigger, response, {
+        hint,
+        sortOrder: nodeData.sortOrder || 0,
+        flags,
+        conditionType,
+        conditionValue
+    });
+
+    // Se tiver actions, atualiza
+    if (actionsJson !== '[]') {
+        await updateDialogNodeActions(node.id, actionsJson);
+    }
+
+    let count = 1; // conta este nó
+
+    // Processa filhos recursivamente
+    if (nodeData.children && Array.isArray(nodeData.children)) {
+        for (const childData of nodeData.children) {
+            count += await importDialogNode(treeId, node.id, childData);
+        }
+    }
+
+    return count;
+}
+
 export const command = {
     name: "npc",
     aliases: ["/npc"],
@@ -573,6 +780,7 @@ export const command = {
             player.socket.write(`  /npc create <nome> [x,y]\r\n`);
             player.socket.write(`  /npc delete <id|nome>\r\n`);
             player.socket.write(`  /npc list\r\n`);
+            player.socket.write(`  /npc import <arquivo.json>   Importa NPC completo via JSON\r\n`);
             player.socket.write(`  /npc tree <id|nome> ...     Gerencia árvore de diálogo\r\n\n`);
             return;
         }
@@ -651,6 +859,9 @@ export const command = {
                 }).join("\r\n");
 
                 player.socket.write(`\r\nNPCs cadastrados:\r\n${rows}\r\n\n`);
+
+            } else if (action === "import") {
+                await handleImport(player, input, args);
 
             } else {
                 player.socket.write(`\r\nAção inválida: '${action}'. Use 'create', 'delete', 'list' ou 'tree'.\r\n\n`);

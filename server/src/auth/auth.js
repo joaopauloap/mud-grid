@@ -36,7 +36,7 @@ export async function handleAuthLine(player, input, callbacks) {
             sendLine(player.socket, `[Guard]: Este identificador não consta na relação deste setor da Grade.`);
             await delay(2000);
             sendLine(player.socket, `[Guard]: Entregue-me seu disco, programa.`);
-            await delay(3000);
+            await delay(1000);
             sendLine(player.socket, `[Guard]: ...`);
             await delay(3000);
             sendLine(player.socket, `[Guard]: Não possui disco?`);

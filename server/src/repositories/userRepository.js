@@ -15,7 +15,7 @@ export class UserRepository {
             username, 
             passwordHash, 
             salt,
-            JSON.stringify([{ id: 'caneta', name: 'Caneta', type: 'item', description: 'Uma caneta simples de tinta azul.' }])
+            JSON.stringify([])
         ]);
     }
 

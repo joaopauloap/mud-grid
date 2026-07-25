@@ -245,7 +245,7 @@ async function executeNodeActions(player, npcName, location, node) {
                         y: player.location.y,
                         inventory: player.inventory
                     });
-                    broadcastNpcMessage(npcName, `[${item.name} concedido.]`, location, player.serverPlayers);
+                    broadcastNpcMessage(npcName, `[${item.name} recebido]`, location, player.serverPlayers);
                     break;
                 }
                 case 'remove_item': {
@@ -257,6 +257,7 @@ async function executeNodeActions(player, npcName, location, node) {
                             inventory: player.inventory
                         });
                     }
+                    broadcastNpcMessage(npcName, `[${action.name} entregue]`, location, player.serverPlayers);
                     break;
                 }
                 case 'teleport': {

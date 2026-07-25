@@ -19,7 +19,7 @@ export class NpcRepository {
         const npc = await NpcRepository.getNpcById(id);
         if (!npc) return null;
         await run(`DELETE FROM npcs WHERE id = ?`, [id]);
-        await run(`DELETE FROM npc_dialogs WHERE npc_id = ?`, [id]);
+        // Diálogos em árvore são deletados via ON DELETE CASCADE da dialog_trees
         return npc;
     }
 

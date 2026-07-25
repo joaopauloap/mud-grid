@@ -1,0 +1,74 @@
+[
+  {
+    "x": 0,
+    "y": 0,
+    "city": "Grade",
+    "place": "Portal da Grade",
+    "environment": "Plataforma do portal",
+    "description": "Você está na plataforma do portal da Grade, cercada por colunas brilhantes e painéis de energia."
+  },
+  {
+    "x": 0,
+    "y": -1,
+    "city": "Grade",
+    "place": "Corredor Antigo",
+    "environment": "Corredor sombrio",
+    "description": "Você está em um corredor sombrio com inscrições antigas nas paredes de metal."
+  },
+  {
+    "x": 1,
+    "y": 0,
+    "city": "Grade",
+    "place": "Ponte dos Arestos",
+    "environment": "Ponte suspensa",
+    "description": "Você vê uma ponte suspendida sobre um fosso de energia azul."
+  },
+  {
+    "x": -1,
+    "y": 0,
+    "city": "Grade",
+    "place": "Câmara de Cristal",
+    "environment": "Câmara silenciosa",
+    "description": "Você vê uma câmara silenciosa com cristais pulsando levemente."
+  },
+  {
+    "x": 0,
+    "y": 1,
+    "city": "Grade",
+    "place": "Salão do Núcleo",
+    "environment": "Salão com parapeitos",
+    "description": "Você vê um salão com parapeitos e janelas que mostram as luzes do núcleo."
+  },
+  {
+    "x": 1,
+    "y": -1,
+    "city": "Grade",
+    "place": "Escadaria Espiral",
+    "environment": "Escadaria em espiral",
+    "description": "Você vê uma escadaria em espiral que sobe em direção a um domo de vidro."
+  },
+  {
+    "x": -1,
+    "y": -1,
+    "city": "Grade",
+    "place": "Jardim Bioluminescente",
+    "environment": "Jardim interno",
+    "description": "Você vê um jardim interno com plantas bioluminescentes."
+  },
+  {
+    "x": 1,
+    "y": 1,
+    "city": "Grade",
+    "place": "Laboratório Abandonado",
+    "environment": "Laboratório",
+    "description": "Você vê um laboratório abandonado com mesas cobertas por artefatos."
+  },
+  {
+    "x": -1,
+    "y": 1,
+    "city": "Grade",
+    "place": "Depósito",
+    "environment": "Depósito",
+    "description": "Você vê um depósito cheio de caixas retorcidas e caminhos estreitos."
+  }
+]
