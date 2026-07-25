@@ -6,12 +6,12 @@ import { GameService } from "../services/gameService.js";
 /**
  * Palavras de saudação usadas para detectar início de diálogo.
  */
-const GREETING_WORDS = ['oi', 'ola', 'olá', 'saudações', 'saudacoes', 'hi', 'hello', 'greetings', 'eai', 'iae'];
+const GREETING_WORDS = ['oi', 'ola', 'olá', 'saudações', 'saudacoes', 'hi', 'hello', 'greetings'];
 
 /**
  * Palavras de despedida que encerram o diálogo.
  */
-const GOODBYE_WORDS = ['tchau', 'ate', 'até', 'adeus', 'bye', 'goodbye', 'farewell', 'flw', 'falou'];
+const GOODBYE_WORDS = ['tchau', 'xau', 'ciao', 'ate', 'até', 'adeus', 'bye', 'goodbye', 'farewell'];
 
 /**
  * Verifica se o texto contém uma palavra de saudação.
@@ -51,10 +51,30 @@ async function findNpcInRoom(player, input) {
 
 /**
  * Envia uma mensagem do NPC para todos os jogadores na mesma localização.
+ * Se playerName for fornecido, a mensagem é formatada como "Fulano_NPC a Beltrano: texto".
  */
-function broadcastNpcMessage(npcName, message, location, playersMap) {
+function broadcastNpcMessage(npcName, message, location, playersMap, playerName) {
     const nearbyPlayers = playersAtLocation(location, playersMap);
-    const msg = `\r\n[NPC]${npcName}: ${message}\r\n`;
+    const msg = playerName
+        ? `\r\n[${npcName}_NPC a ${playerName}]: ${message}\r\n`
+        : `\r\n${npcName}_NPC: ${message}\r\n`;
+    for (const p of nearbyPlayers) {
+        if (p.socket && !p.socket.destroyed) {
+            p.socket.write(msg);
+        }
+    }
+}
+
+/**
+ * Exibe a mensagem do jogador no chat de todos os jogadores na mesma sala.
+ * Se npcName for fornecido, a mensagem é formatada como "jogador a npc: texto".
+ * Deve ser chamada antes de broadcastNpcMessage para manter a ordem cronológica.
+ */
+function broadcastPlayerMessage(player, input, npcName) {
+    const nearbyPlayers = playersAtLocation(player.location, player.serverPlayers);
+    const msg = npcName
+        ? `\r\n[${player.name} a ${npcName}_NPC]: ${input}\r\n`
+        : `\r\n${player.name}: ${input}\r\n`;
     for (const p of nearbyPlayers) {
         if (p.socket && !p.socket.destroyed) {
             p.socket.write(msg);
@@ -139,10 +159,14 @@ async function tryStartDialog(player, input) {
     if (!matchedRoot) matchedRoot = matchedRoots[0];
 
     player.startDialog(npc.id, npc.name, matchedRoot.id, tree.id);
-    broadcastNpcMessage(npc.name, matchedRoot.npcResponse, player.location, player.serverPlayers);
+
+    // Exibe a mensagem do jogador antes da resposta do NPC
+    broadcastPlayerMessage(player, input, npc.name);
+
+    broadcastNpcMessage(npc.name, matchedRoot.npcResponse, player.location, player.serverPlayers, player.name);
 
     if (matchedRoot.npcHint) {
-        broadcastNpcMessage(npc.name, `[Dicas: ${matchedRoot.npcHint}]`, player.location, player.serverPlayers);
+        broadcastNpcMessage(npc.name, `[Dicas: ${matchedRoot.npcHint}]`, player.location, player.serverPlayers, player.name);
     }
 
     // Executa ações configuradas no nó (give_item, teleport, etc.)
@@ -170,34 +194,41 @@ async function continueDialog(player, input) {
     }
 
     if (hasGoodbyeWord(input)) {
-        broadcastNpcMessage(state.npcName, `Até mais, ${player.name}!`, player.location, player.serverPlayers);
+        broadcastPlayerMessage(player, input, state.npcName);
+        broadcastNpcMessage(state.npcName, `Até mais, ${player.name}!`, player.location, player.serverPlayers, player.name);
         player.cancelDialog();
         return true;
     }
 
     const matched = await game.findDialogChildByTrigger(state.nodeId, input);
     if (!matched) {
+        broadcastPlayerMessage(player, input, state.npcName);
         const children = await game.getDialogChildNodes(state.nodeId);
         if (children.length > 0) {
             const hints = children.map(c => c.trigger).join(', ');
-            broadcastNpcMessage(state.npcName, `Não entendi. Tente: ${hints}`, player.location, player.serverPlayers);
+            broadcastNpcMessage(state.npcName, `Não entendi. Tente: ${hints}`, player.location, player.serverPlayers, player.name);
         } else {
-            broadcastNpcMessage(state.npcName, `Não tenho mais nada a dizer.`, player.location, player.serverPlayers);
+            broadcastNpcMessage(state.npcName, `Não tenho mais nada a dizer.`, player.location, player.serverPlayers, player.name);
         }
         return true;
     }
 
     const conditionMet = await evaluateCondition(player, matched);
     if (!conditionMet) {
-        broadcastNpcMessage(state.npcName, `(Você ainda não atende aos requisitos para isso.)`, player.location, player.serverPlayers);
+        broadcastPlayerMessage(player, input, state.npcName);
+        broadcastNpcMessage(state.npcName, `(Você ainda não atende aos requisitos para isso.)`, player.location, player.serverPlayers, player.name);
         return true;
     }
 
     player.startDialog(state.npcId, state.npcName, matched.id, state.treeId);
-    broadcastNpcMessage(state.npcName, matched.npcResponse, player.location, player.serverPlayers);
+
+    // Exibe a mensagem do jogador antes da resposta do NPC
+    broadcastPlayerMessage(player, input, state.npcName);
+
+    broadcastNpcMessage(state.npcName, matched.npcResponse, player.location, player.serverPlayers, player.name);
 
     if (matched.npcHint) {
-        broadcastNpcMessage(state.npcName, `[Dicas: ${matched.npcHint}]`, player.location, player.serverPlayers);
+        broadcastNpcMessage(state.npcName, `[Dicas: ${matched.npcHint}]`, player.location, player.serverPlayers, player.name);
     }
 
     // Executa ações configuradas no nó (give_item, teleport, etc.)
@@ -245,7 +276,7 @@ async function executeNodeActions(player, npcName, location, node) {
                         y: player.location.y,
                         inventory: player.inventory
                     });
-                    broadcastNpcMessage(npcName, `[${item.name} recebido]`, location, player.serverPlayers);
+                    broadcastNpcMessage(npcName, `[${item.name} recebido]`, location, player.serverPlayers, player.name);
                     break;
                 }
                 case 'remove_item': {
@@ -257,7 +288,7 @@ async function executeNodeActions(player, npcName, location, node) {
                             inventory: player.inventory
                         });
                     }
-                    broadcastNpcMessage(npcName, `[${action.name} entregue]`, location, player.serverPlayers);
+                    broadcastNpcMessage(npcName, `[${action.name} entregue]`, location, player.serverPlayers, player.name);
                     break;
                 }
                 case 'teleport': {
@@ -269,7 +300,7 @@ async function executeNodeActions(player, npcName, location, node) {
                     break;
                 }
                 case 'broadcast': {
-                    broadcastNpcMessage(npcName, action.message, location, player.serverPlayers);
+                    broadcastNpcMessage(npcName, action.message, location, player.serverPlayers, player.name);
                     break;
                 }
                 case 'command': {

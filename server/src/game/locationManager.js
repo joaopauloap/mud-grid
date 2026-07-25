@@ -25,7 +25,7 @@ export function playersAtLocation(location, players) {
 /**
  * Retorna o texto descritivo de quem está presente no mesmo local do jogador
  * (outros jogadores + NPCs).
- * Ex: "Também estão aqui: joao, [NPC]Guarda"
+ * Ex: "Também estão aqui: joao, Guarda_NPC"
  * Ex: "Você está sozinho neste local."
  */
 export async function getPresentEntitiesText(player) {
@@ -36,7 +36,7 @@ export async function getPresentEntitiesText(player) {
         .map(p => p.name);
 
     const npcsHere = await getNpcsByLocation(player.location.x, player.location.y);
-    const npcNames = npcsHere.map(npc => `[NPC]${npc.name}`);
+    const npcNames = npcsHere.map(npc => `${npc.name}_NPC`);
 
     const allPresent = [...others, ...npcNames];
     return allPresent.length > 0
