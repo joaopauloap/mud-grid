@@ -16,11 +16,29 @@ export const command = {
     async execute(player, input) {
         const tokens = parseCommandArgs(input.slice("/criar".length).trim());
         if (tokens.length < 4) {
-            player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [coordenada|usuario]\r\n\n`);
+            player.socket.write(`\nUso: /criar <tipo> <keyword> <nome> <descrição> [coordenada|usuario] [pickup:all|none|player1,player2] [drop:all|none|player1,player2]\r\n\n`);
             return;
         }
 
-        const [type, keyword, name, description, dest] = tokens;
+        const [type, keyword, name, description, dest, pickupRaw, dropRaw] = tokens;
+
+        // Interpreta permissão de pickup
+        let pickupPermission = 'all';
+        if (pickupRaw) {
+            const lower = pickupRaw.toLowerCase();
+            if (lower === 'none') pickupPermission = 'none';
+            else if (lower === 'all') pickupPermission = 'all';
+            else pickupPermission = JSON.stringify(lower.split(','));
+        }
+
+        // Interpreta permissão de drop
+        let dropPermission = 'all';
+        if (dropRaw) {
+            const lower = dropRaw.toLowerCase();
+            if (lower === 'none') dropPermission = 'none';
+            else if (lower === 'all') dropPermission = 'all';
+            else dropPermission = JSON.stringify(lower.split(','));
+        }
 
         try {
             if (!dest) {
@@ -36,7 +54,9 @@ export const command = {
                     name,
                     description,
                     x: player.location.x,
-                    y: player.location.y
+                    y: player.location.y,
+                    pickupPermission,
+                    dropPermission
                 });
 
                 player.socket.write(`\nObjeto '${created.name}' (ID: ${created.id}) criado aqui.\r\n\n`);
@@ -56,7 +76,9 @@ export const command = {
                         name,
                         description,
                         x: coordinate.x,
-                        y: coordinate.y
+                        y: coordinate.y,
+                        pickupPermission,
+                        dropPermission
                     });
 
                     player.socket.write(`\nObjeto '${created.name}' (ID: ${created.id}) criado no local (${coordinate.x}, ${coordinate.y}).\r\n\n`);
@@ -81,7 +103,9 @@ export const command = {
                         type,
                         name,
                         description,
-                        targetPlayer
+                        targetPlayer,
+                        pickupPermission,
+                        dropPermission
                     });
 
                     player.socket.write(`\nObjeto '${created.name}' (ID: ${created.id}) criado no inventário do jogador '${targetPlayer.name}'.\r\n\n`);

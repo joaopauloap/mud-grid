@@ -268,7 +268,9 @@ async function executeNodeActions(player, npcName, location, node) {
                     const item = {
                         keyword: action.keyword,
                         name: action.name || action.keyword,
-                        description: action.description || ''
+                        description: action.description || '',
+                        pickupPermission: action.pickupPermission || 'all',
+                        dropPermission: action.dropPermission || 'all'
                     };
                     player.addToInventory(item);
                     await game.savePlayerLocation(player.name, {

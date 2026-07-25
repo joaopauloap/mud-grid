@@ -2,6 +2,7 @@ import { UserRepository } from "../repositories/userRepository.js";
 import { WorldRepository } from "../repositories/worldRepository.js";
 import { playersAtLocation } from "../game/locationManager.js";
 import { descriptions, movePosition, saveLocationData, lookLocation, getLocationData } from "../map/index.js";
+import { canPickup, canDrop } from "../entities/worldObject.js";
 
 export class GameService {
     /**
@@ -96,7 +97,9 @@ export class GameService {
             keyword: item.keyword,
             type: item.type,
             name: item.name,
-            description: item.description
+            description: item.description,
+            pickupPermission: item.pickupPermission || 'all',
+            dropPermission: item.dropPermission || 'all'
         };
         destData.objects.push(itemToAdd);
 
@@ -124,6 +127,11 @@ export class GameService {
      * Transfere um item do chão para o inventário de um jogador.
      */
     static async transferItemToPlayer(item, sourceLocation, targetPlayer) {
+        // Verifica permissão de pegar
+        if (!canPickup(targetPlayer.name, item)) {
+            throw new Error(`Você não pode pegar este item.`);
+        }
+
         const sourceKey = `${sourceLocation.x},${sourceLocation.y}`;
         const sourceData = descriptions.get(sourceKey);
 
@@ -141,7 +149,9 @@ export class GameService {
             keyword: item.keyword,
             type: item.type,
             name: item.name,
-            description: item.description
+            description: item.description,
+            pickupPermission: item.pickupPermission || 'all',
+            dropPermission: item.dropPermission || 'all'
         };
 
         // Adicionar ao inventário do jogador (memória)
@@ -175,18 +185,23 @@ export class GameService {
     /**
      * Cria um novo objeto no mundo (seja coordenada ou inventário de jogador).
      */
-    static async createObject({ keyword, type, name, description, x, y, targetPlayer }) {
+    static async createObject({ keyword, type, name, description, x, y, targetPlayer, pickupPermission, dropPermission }) {
         let created;
+        const permPickup = pickupPermission || 'all';
+        const permDrop = dropPermission || 'all';
+
         if (targetPlayer) {
             // Criar no inventário do jogador
-            created = await WorldRepository.createWorldObject({ keyword, type, name, description, x: null, y: null });
+            created = await WorldRepository.createWorldObject({ keyword, type, name, description, x: null, y: null, pickupPermission: permPickup, dropPermission: permDrop });
             targetPlayer.inventory = targetPlayer.inventory || [];
             targetPlayer.inventory.push({
                 id: created.id,
                 keyword: created.keyword,
                 type: created.type,
                 name: created.name,
-                description: created.description
+                description: created.description,
+                pickupPermission: permPickup,
+                dropPermission: permDrop
             });
 
             try {
@@ -203,7 +218,7 @@ export class GameService {
             }
         } else {
             // Criar em coordenadas
-            created = await WorldRepository.createWorldObject({ keyword, type, name, description, x, y });
+            created = await WorldRepository.createWorldObject({ keyword, type, name, description, x, y, pickupPermission: permPickup, dropPermission: permDrop });
             const key = `${x},${y}`;
             const locationData = descriptions.get(key) || {
                 city: "Grade",
@@ -223,7 +238,9 @@ export class GameService {
                 keyword: created.keyword,
                 type: created.type,
                 name: created.name,
-                description: created.description
+                description: created.description,
+                pickupPermission: permPickup,
+                dropPermission: permDrop
             });
 
             try {
@@ -291,6 +308,11 @@ export class GameService {
     static async dropItem(player, item) {
         if (!player.location) {
             throw new Error("Posição do jogador desconhecida.");
+        }
+
+        // Verifica permissão de soltar
+        if (!canDrop(player.name, item)) {
+            throw new Error(`Você não pode soltar este item.`);
         }
 
         const key = `${player.location.x},${player.location.y}`;

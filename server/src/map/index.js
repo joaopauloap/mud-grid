@@ -37,7 +37,9 @@ export async function initWorld() {
                 keyword: obj.keyword,
                 type: obj.type,
                 name: obj.name,
-                description: obj.description
+                description: obj.description,
+                pickupPermission: obj.pickupPermission || 'all',
+                dropPermission: obj.dropPermission || 'all'
             });
         }
     }

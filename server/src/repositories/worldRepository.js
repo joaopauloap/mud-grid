@@ -51,13 +51,17 @@ export class WorldRepository {
     }
 
     static async createWorldObject(object) {
-        const result = await run(`INSERT INTO world_objects (keyword, type, name, description, x, y) VALUES (?, ?, ?, ?, ?, ?)`, [
+        const pickupPerm = object.pickupPermission || 'all';
+        const dropPerm = object.dropPermission || 'all';
+        const result = await run(`INSERT INTO world_objects (keyword, type, name, description, x, y, pickup_permission, drop_permission) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
             object.keyword,
             object.type,
             object.name,
             object.description,
             object.x,
-            object.y
+            object.y,
+            pickupPerm,
+            dropPerm
         ]);
         return new WorldObject({
             id: result.lastID,
@@ -66,22 +70,24 @@ export class WorldRepository {
             name: object.name,
             description: object.description,
             x: object.x,
-            y: object.y
+            y: object.y,
+            pickupPermission: pickupPerm,
+            dropPermission: dropPerm
         });
     }
 
     static async getAllWorldObjects() {
-        const rows = await all(`SELECT id, keyword, type, name, description, x, y FROM world_objects`);
+        const rows = await all(`SELECT id, keyword, type, name, description, x, y, pickup_permission, drop_permission FROM world_objects`);
         return (rows || []).map(row => WorldObject.fromRow(row));
     }
 
     static async getWorldObjectsByLocation(x, y) {
-        const rows = await all(`SELECT id, keyword, type, name, description, x, y FROM world_objects WHERE x = ? AND y = ?`, [x, y]);
+        const rows = await all(`SELECT id, keyword, type, name, description, x, y, pickup_permission, drop_permission FROM world_objects WHERE x = ? AND y = ?`, [x, y]);
         return (rows || []).map(row => WorldObject.fromRow(row));
     }
 
     static async getWorldObjectById(id) {
-        const row = await get(`SELECT id, keyword, type, name, description, x, y FROM world_objects WHERE id = ?`, [id]);
+        const row = await get(`SELECT id, keyword, type, name, description, x, y, pickup_permission, drop_permission FROM world_objects WHERE id = ?`, [id]);
         return WorldObject.fromRow(row);
     }
 
@@ -92,13 +98,15 @@ export class WorldRepository {
 
     static async seedWorldObjects(objects) {
         for (const obj of objects) {
-            await run(`INSERT OR IGNORE INTO world_objects (keyword, type, name, description, x, y) VALUES (?, ?, ?, ?, ?, ?)`, [
+            await run(`INSERT OR IGNORE INTO world_objects (keyword, type, name, description, x, y, pickup_permission, drop_permission) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
                 obj.keyword,
                 obj.type,
                 obj.name,
                 obj.description,
                 obj.x,
-                obj.y
+                obj.y,
+                obj.pickupPermission || 'all',
+                obj.dropPermission || 'all'
             ]);
         }
     }
@@ -112,8 +120,13 @@ export class WorldRepository {
         await run(`DELETE FROM world_objects WHERE id = ?`, [id]);
     }
 
+    static async updateWorldObjectPermissions(id, pickupPermission, dropPermission) {
+        await run(`UPDATE world_objects SET pickup_permission = ?, drop_permission = ? WHERE id = ?`, [pickupPermission, dropPermission, id]);
+        return await WorldRepository.getWorldObjectById(id);
+    }
+
     static async getWorldObjectsByKeyword(keyword) {
-        const rows = await all(`SELECT id, keyword, type, name, description, x, y FROM world_objects WHERE keyword = ?`, [keyword]);
+        const rows = await all(`SELECT id, keyword, type, name, description, x, y, pickup_permission, drop_permission FROM world_objects WHERE keyword = ?`, [keyword]);
         return (rows || []).map(row => WorldObject.fromRow(row));
     }
 }

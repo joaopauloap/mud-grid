@@ -89,8 +89,20 @@ export async function init() {
         name TEXT,
         description TEXT,
         x INTEGER,
-        y INTEGER
+        y INTEGER,
+        pickup_permission TEXT DEFAULT 'all',
+        drop_permission TEXT DEFAULT 'all'
     )`);
+
+    // Migração: adiciona colunas de permissão se a tabela já existia sem elas
+    const hasPickupPerm = await tableHasColumn('world_objects', 'pickup_permission');
+    if (!hasPickupPerm) {
+        await run(`ALTER TABLE world_objects ADD COLUMN pickup_permission TEXT DEFAULT 'all'`);
+    }
+    const hasDropPerm = await tableHasColumn('world_objects', 'drop_permission');
+    if (!hasDropPerm) {
+        await run(`ALTER TABLE world_objects ADD COLUMN drop_permission TEXT DEFAULT 'all'`);
+    }
 
     await run(`CREATE TABLE IF NOT EXISTS roles (
         name TEXT PRIMARY KEY
