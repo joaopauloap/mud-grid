@@ -16,27 +16,53 @@
       },
       {
         "trigger": "oi",
-        "response": "Saudações, programa. Eu sou CLU.",
+        "response": "Saudações, programa. Eu sou CLU. O que deseja?",
         "flags": "greeting",
         "children": [
           {
             "trigger": "disco",
-            "response": "O que temos aqui... Um programa errante sem Disco de Identificação?",
+            "response": "Ah, o que temos aqui... Mais um programa errante sem Disco de Identificação?",
             "flags": "goodbye",
             "actions": [
+              {
+                "type": "delay",
+                "ms": 2000
+              },
+              {
+                "type": "broadcast",
+                "message": "Eu habito a Grade há 16 ciclos e apenas no último microciclo você é o terceiro programa errante que me aparece. Me pergunto como conseguem ser tão estúpidos para perderem o objeto mais importante de seu mísero ciclo de vida."
+              },
+              {
+                "type": "delay",
+                "ms": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Programa, o Disco de Identificação é um dispositivo de alta densidade de dados que funciona como registro de identidade, unidade de armazenamento e ferramenta operacional. Sua perda ou destruição compromete a integridade do programa e pode resultar na corrupção permanente de informações essenciais."
+              },
+              {
+                "type": "delay",
+                "ms": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Bem, vire-se de costas e me mostre seu slot de disco."
+              },
+              {
+                "type": "delay",
+                "ms": 3000
+              },
               {
                 "type": "give_item",
                 "keyword": "disco",
                 "name": "Disco de Identificação",
-                "description": "Disco de identificação padrão dos programas da Grade. Guarda informações sobre identificação, diretriz, funções, conquistas e histórico de seu titular."
+                "description": "Disco de identificação padrão dos programas da Grade. Guarda informações sobre identificação, diretriz, funções, conquistas e histórico de seu titular.",
+                "pickupPermission": "none",
+                "dropPermission": "none"
               },
               {
                 "type": "broadcast",
-                "message": "Retorne ao Guardião."
-              },
-              {
-                "type": "broadcast",
-                "message": "Adeus. EOL"
+                "message": "Agora retorne ao Guardião do portal. Adeus."
               }
             ]
           }

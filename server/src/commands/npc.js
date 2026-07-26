@@ -123,6 +123,7 @@ function printTreeUsage(player) {
     player.socket.write(`  action <nodeId> remove_item <kw>    Remove item do jogador\r\n`);
     player.socket.write(`  action <nodeId> teleport <x> <y>    Teleporta o jogador\r\n`);
     player.socket.write(`  action <nodeId> broadcast <msg>     Envia mensagem pública\r\n`);
+    player.socket.write(`  action <nodeId> delay <ms>        Aguarda N milissegundos\r\n`);
     player.socket.write(`  del <nodeId>                       Deleta nó e seus filhos\r\n`);
     player.socket.write(`  show                               Exibe a árvore completa\r\n\n`);
 }
@@ -472,6 +473,7 @@ async function requireTree(player, npc) {
  *   remove_item <kw>         → adiciona ação de remover item
  *   teleport <x> <y>         → adiciona ação de teleportar
  *   broadcast <mensagem>     → adiciona ação de broadcast
+ *   delay <ms>               → adiciona pausa (milissegundos)
  */
 async function treeAction(player, npc, input, args) {
     const tree = await requireTree(player, npc);
@@ -547,6 +549,15 @@ async function treeAction(player, npc, input, args) {
                     return;
                 }
                 currentActions.push({ type: 'broadcast', message: msg });
+                break;
+            }
+            case 'delay': {
+                const ms = parseInt(args[6], 10);
+                if (isNaN(ms) || ms <= 0) {
+                    player.socket.write(`\r\nUso: action ${nodeId} delay <milissegundos>\r\n\n`);
+                    return;
+                }
+                currentActions.push({ type: 'delay', ms });
                 break;
             }
             default:
@@ -735,7 +746,7 @@ async function importDialogNode(treeId, parentId, nodeData) {
             if (!action.type) {
                 throw new Error(`Ação sem "type": ${JSON.stringify(action)}`);
             }
-            const validTypes = ['give_item', 'remove_item', 'teleport', 'broadcast'];
+            const validTypes = ['give_item', 'remove_item', 'teleport', 'broadcast', 'delay'];
             if (!validTypes.includes(action.type)) {
                 throw new Error(`Tipo de ação inválido: "${action.type}". Válidos: ${validTypes.join(', ')}`);
             }

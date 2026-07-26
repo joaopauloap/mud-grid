@@ -10,8 +10,8 @@ import { broadcast, disconnectExistingUser, sendWelcome, processLine } from "./c
 const PORT = 999;
 let nextId = 1;
 
-export async function startServer() {
-    await game.init();
+export async function startServer(forceReseed = false) {
+    await game.init(forceReseed);
     await initWorld();
 
     const server = net.createServer(socket => {

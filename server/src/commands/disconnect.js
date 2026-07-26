@@ -6,8 +6,23 @@ export const command = {
     roles: ["admin"],
     async execute(player, input) {
         const args = input.trim().split(/\s+/);
+
+        // /desconectar all → desconecta todos exceto o admin
+        if (args.length === 2 && args[1].toLowerCase() === "all") {
+            let count = 0;
+            for (const p of player.serverPlayers.values()) {
+                if (p.id !== player.id && p.authenticated) {
+                    p.socket.write(`\n[Sistema]: Você foi desconectado por um administrador.\r\n\n`);
+                    p.socket.end();
+                    count++;
+                }
+            }
+            player.socket.write(`\n${count} jogador(es) desconectado(s).\r\n\n`);
+            return;
+        }
+
         if (args.length !== 2) {
-            player.socket.write(`\nUso: /desconectar <usuario>\r\n\n`);
+            player.socket.write(`\nUso: /desconectar <usuario|all>\r\n\n`);
             return;
         }
 

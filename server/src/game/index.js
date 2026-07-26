@@ -11,15 +11,15 @@ import { AuthService } from "../services/authService.js";
 const NPC_DATA_DIR = path.resolve(process.cwd(), "data", "npcs");
 const PLACES_DATA_DIR = path.resolve(process.cwd(), "data", "places");
 
-export async function init() {
+export async function init(forceReseed = false) {
     await dbInit();
-    await seedPlacesFromJson();
-    await seedNpcsFromJson();
+    await seedPlacesFromJson(forceReseed);
+    await seedNpcsFromJson(forceReseed);
 }
 
 // ==================== Places Seed via JSON ====================
 
-async function seedPlacesFromJson() {
+async function seedPlacesFromJson(forceReseed = false) {
     const filePath = path.join(PLACES_DATA_DIR, "places.json");
     let raw;
     try {
@@ -42,10 +42,16 @@ async function seedPlacesFromJson() {
         return;
     }
 
-    // Só faz seed se a tabela estiver vazia
-    const count = await WorldRepository.getWorldCount();
-    if (count > 0) {
-        return;
+    if (forceReseed) {
+        console.log("[seed] Forçando reseed de lugares...");
+        await WorldRepository.deleteAllWorldPlaces();
+        await WorldRepository.deleteAllWorldObjects();
+    } else {
+        // Só faz seed se a tabela estiver vazia
+        const count = await WorldRepository.getWorldCount();
+        if (count > 0) {
+            return;
+        }
     }
 
     try {
@@ -62,13 +68,18 @@ async function seedPlacesFromJson() {
  * Lê todos os arquivos .json do diretório data/npcs/ e importa
  * NPCs que ainda não existam no banco (verifica pelo nome).
  */
-async function seedNpcsFromJson() {
+async function seedNpcsFromJson(forceReseed = false) {
     let files;
     try {
         files = fs.readdirSync(NPC_DATA_DIR).filter(f => f.endsWith('.json'));
     } catch {
         // Diretório não existe — nada a seedar
         return;
+    }
+
+    if (forceReseed) {
+        console.log("[seed] Forçando reseed de NPCs...");
+        await NpcRepository.deleteAllNpcs();
     }
 
     for (const file of files) {
@@ -396,4 +407,16 @@ export async function findDialogNodeByTrigger(treeId, trigger) {
 
 export async function getDialogTreeAsText(treeId) {
     return await DialogTreeRepository.getTreeAsText(treeId);
+}
+
+/**
+ * Força o reseed de lugares e NPCs a partir dos arquivos JSON.
+ * Apaga os dados existentes no banco e reimporta tudo.
+ */
+export async function reseed() {
+    console.log("[reseed] Iniciando reseed forçado...");
+    await seedPlacesFromJson(true);
+    await seedNpcsFromJson(true);
+    console.log("[reseed] Reseed concluído.");
+    // Nota: após reseed, chame initWorld() do map/index.js para recarregar em memória
 }

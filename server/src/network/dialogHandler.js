@@ -8,6 +8,9 @@ import { GameService } from "../services/gameService.js";
  */
 const GREETING_WORDS = ['oi', 'ola', 'olá', 'saudações', 'saudacoes', 'hi', 'hello', 'greetings'];
 
+/** Aguarda um número de milissegundos. */
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 /**
  * Palavras de despedida que encerram o diálogo.
  */
@@ -62,6 +65,15 @@ function broadcastNpcMessage(npcName, message, location, playersMap, playerName)
         if (p.socket && !p.socket.destroyed) {
             p.socket.write(msg);
         }
+    }
+}
+
+/**
+ * Envia uma mensagem privada do NPC apenas para o jogador alvo.
+ */
+function sendPrivateNpcMessage(player, npcName, message) {
+    if (player.socket && !player.socket.destroyed) {
+        player.socket.write(`\r\n   *${npcName}_NPC ${message}*\r\n`);
     }
 }
 
@@ -256,6 +268,7 @@ async function continueDialog(player, input) {
  *   set_flag    → (reservado para sistema de quests)
  *   broadcast   → envia mensagem para todos na mesma sala
  *   command     → executa um comando administrativo (ex: "create espada 0,0")
+ *   delay       → aguarda N milissegundos antes da próxima ação
  */
 async function executeNodeActions(player, npcName, location, node) {
     const actions = node.getActions();
@@ -278,7 +291,7 @@ async function executeNodeActions(player, npcName, location, node) {
                         y: player.location.y,
                         inventory: player.inventory
                     });
-                    broadcastNpcMessage(npcName, `[${item.name} recebido]`, location, player.serverPlayers, player.name);
+                    sendPrivateNpcMessage(player, npcName, `lhe entrega '${item.name}'`);
                     break;
                 }
                 case 'remove_item': {
@@ -289,8 +302,8 @@ async function executeNodeActions(player, npcName, location, node) {
                             y: player.location.y,
                             inventory: player.inventory
                         });
+                        sendPrivateNpcMessage(player, npcName, `lhe toma '${action.name}'`);
                     }
-                    broadcastNpcMessage(npcName, `[${action.name} entregue]`, location, player.serverPlayers, player.name);
                     break;
                 }
                 case 'teleport': {
@@ -303,6 +316,13 @@ async function executeNodeActions(player, npcName, location, node) {
                 }
                 case 'broadcast': {
                     broadcastNpcMessage(npcName, action.message, location, player.serverPlayers, player.name);
+                    break;
+                }
+                case 'delay': {
+                    const ms = parseInt(action.ms, 10);
+                    if (!isNaN(ms) && ms > 0) {
+                        await delay(ms);
+                    }
                     break;
                 }
                 case 'command': {

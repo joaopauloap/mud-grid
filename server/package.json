@@ -4,7 +4,8 @@
   "type": "module",
   "main": "main.js",
   "scripts": {
-    "start": "node main.js"
+    "start": "node main.js",
+    "reseed": "node main.js --reseed"
   }
   ,"dependencies": {
     "sqlite3": "^5.1.6"

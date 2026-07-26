@@ -31,7 +31,7 @@ export const command = {
             await GameService.dropItem(player, item);
             player.socket.write(`\nVocê soltou: ${item.name}.\r\n\n`);
         } catch (err) {
-            player.socket.write(`\nErro ao soltar o item: ${err.message}\r\n\n`);
+            player.socket.write(`\n${err.message}\r\n\n`);
         }
     }
 };

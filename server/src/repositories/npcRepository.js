@@ -47,4 +47,8 @@ export class NpcRepository {
         await run(`UPDATE npcs SET x = ?, y = ? WHERE id = ?`, [x, y, id]);
         return await NpcRepository.getNpcById(id);
     }
+
+    static async deleteAllNpcs() {
+        await run(`DELETE FROM npcs`);
+    }
 }

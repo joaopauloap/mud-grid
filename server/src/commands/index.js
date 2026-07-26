@@ -17,6 +17,7 @@ import { command as msg } from "./msg.js";
 import { command as usuarios } from "./users.js";
 import { command as objetos } from "./objects.js";
 import { command as npc } from "./npc.js";
+import { command as reseed } from "./reseed.js";
 import { hasRole } from "../game/index.js";
 
 // Mapa de comandos registrados
@@ -54,6 +55,7 @@ register(msg);
 register(usuarios);
 register(objetos);
 register(npc);
+register(reseed);
 
 // Comando especial para Sair
 register({

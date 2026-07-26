@@ -36,7 +36,7 @@ export const command = {
             await GameService.transferItemToPlayer(item, player.location, player);
             player.socket.write(`\nVocê pegou: ${item.name}.\r\n\n`);
         } catch (err) {
-            player.socket.write(`\nErro ao pegar o item: ${err.message}\r\n\n`);
+            player.socket.write(`\n${err.message}\r\n\n`);
         }
     }
 };

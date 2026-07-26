@@ -129,4 +129,12 @@ export class WorldRepository {
         const rows = await all(`SELECT id, keyword, type, name, description, x, y, pickup_permission, drop_permission FROM world_objects WHERE keyword = ?`, [keyword]);
         return (rows || []).map(row => WorldObject.fromRow(row));
     }
+
+    static async deleteAllWorldPlaces() {
+        await run(`DELETE FROM world_places`);
+    }
+
+    static async deleteAllWorldObjects() {
+        await run(`DELETE FROM world_objects`);
+    }
 }
