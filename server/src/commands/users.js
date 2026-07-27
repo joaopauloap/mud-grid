@@ -2,7 +2,7 @@ import { getAllUsers } from "../game/index.js";
 
 export const command = {
     name: "usuarios",
-    aliases: ["/usuarios", "/users"],
+    aliases: ["/usuarios", "/jogadores", "/players", "/users"],
     roles: ["admin"],
     async execute(player) {
         try {
@@ -19,7 +19,7 @@ export const command = {
                 return `- [ID: ${u.id}] Nome: ${u.username} | Posição: (${x}, ${y}) | Status: ${isOnline}`;
             }).join("\r\n");
 
-            player.socket.write(`\nUsuários cadastrados na Grade:\r\n${rows}\r\n\n`);
+            player.socket.write(`\nUsuários cadastrados:\r\n${rows}\r\n\n`);
         } catch (err) {
             player.socket.write(`\nErro ao listar usuários: ${err.message}\r\n\n`);
         }

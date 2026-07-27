@@ -6,7 +6,7 @@ export const command = {
     async execute(player, input) {
         const parts = input.trim().split(/\s+/);
         if (parts.length < 3) {
-            player.socket.write(`\nUso: /msg <usuario> <mensagem>\r\n\n`);
+            player.socket.write(`\nUso: /msg <nome> <mensagem>\r\n\n`);
             return;
         }
 
@@ -17,7 +17,7 @@ export const command = {
         const msgContent = input.slice(firstSpaceIndex + targetName.length).trim();
 
         if (!msgContent) {
-            player.socket.write(`\nUso: /msg <usuario> <mensagem>\r\n\n`);
+            player.socket.write(`\nUso: /msg <nome> <mensagem>\r\n\n`);
             return;
         }
 
@@ -25,7 +25,7 @@ export const command = {
             || [...player.serverPlayers.values()].find(p => p.name && p.name.toLowerCase() === targetName.toLowerCase() && p.authenticated);
 
         if (!targetPlayer) {
-            player.socket.write(`\nUsuário '${targetName}' não encontrado ou não está conectado.\r\n\n`);
+            player.socket.write(`\'${targetName}' não encontrado ou não está conectado.\r\n\n`);
             return;
         }
 

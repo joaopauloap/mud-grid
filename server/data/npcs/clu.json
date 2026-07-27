@@ -6,16 +6,14 @@
     "name": "ArvoreCLU",
     "nodes": [
       {
-        "trigger": "oi",
-        "response": "Saudações, programa. Eu sou CLU.",
         "flags": "greeting,goodbye",
+        "response": "Saudações, programa.",
         "condition": {
           "type": "has_item",
           "value": "disco"
         }
       },
       {
-        "trigger": "oi",
         "response": "Saudações, programa. Eu sou CLU. O que deseja?",
         "flags": "greeting",
         "children": [
@@ -25,44 +23,71 @@
             "flags": "goodbye",
             "actions": [
               {
-                "type": "delay",
-                "ms": 2000
+                "type": "broadcast",
+                "message": "Me pergunto como conseguem ser tão estúpidos para perderem o objeto mais importante de seu mísero ciclo de vida.",
+                "delay": 3000
               },
               {
                 "type": "broadcast",
-                "message": "Eu habito a Grade há 16 ciclos e apenas no último microciclo você é o terceiro programa errante que me aparece. Me pergunto como conseguem ser tão estúpidos para perderem o objeto mais importante de seu mísero ciclo de vida."
-              },
-              {
-                "type": "delay",
-                "ms": 3000
+                "message": "O Disco é um dispositivo de alta densidade de dados. Ele guarda quem você é, sua identificação, experiência, permissões, registros. Sem ele, muitos portões não lhe reconhecerão e arquivos protegidos permanecerão fechados.",
+                "delay": 3000
               },
               {
                 "type": "broadcast",
-                "message": "Programa, o Disco de Identificação é um dispositivo de alta densidade de dados que funciona como registro de identidade, unidade de armazenamento e ferramenta operacional. Sua perda ou destruição compromete a integridade do programa e pode resultar na corrupção permanente de informações essenciais."
-              },
-              {
-                "type": "delay",
-                "ms": 3000
+                "message": "Programas sem disco, como você, são chamados de Errantes. Vagam pela Grade sem função, consumindo recursos sem registro e sem autorização. Continuam existindo, mas já não pertencem a lugar algum.",
+                "delay": 3000
               },
               {
                 "type": "broadcast",
-                "message": "Bem, vire-se de costas e me mostre seu slot de disco."
+                "message": "Os Errantes são potenciais programas corrompidos, pois com o passar dos ciclos, começam a perder partes de seus próprios registros. Alguns esquecem sua função original; outros sequer lembram o próprio nome. Quando chegam nesse estágio não podem ser recuperados e muito menos reintegrados ao sistema da Grade; só lhes resta a destruição.",
+                "delay": 3000
               },
               {
-                "type": "delay",
-                "ms": 3000
+                "type": "broadcast",
+                "message": "Programas corrompidos são imprevisíveis, atacam outros programas e estruturas, afetando os processos da Grade. Mas o seu caso é diferente, afinal você não foi capturado pela guarda, mas veio até mim.",
+                "delay": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "...",
+                "delay": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Desde que habito a Grade, há 16 ciclos, a resolução para ambos os casos era a destruição imediata do programa. Porém, no último ciclo notamos um grande aumento na quantidade de errantes e corruptos. Uma anomalia que ainda não conseguimos identificar.",
+                "delay": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Devido a isso, nosso Usuário-Mestre definiu a diretriz de conceder uma nova chance aos programas errantes e me encarregou de lidar com esse problema.",
+                "delay": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Sobre seu disco perdido... Não é possível recriá-lo, pois cada disco é único. Para ser sincero, nem deveria ser possível receber um novo, mas... é a nova diretriz.",
+                "delay": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Deverá passar pelo Desafio da Grade para garantir que pode ser reintegrado ao Grande Sistema. Lá, suas funções mais primitivas serão testadas. Para isso, lhe concederei um Disco Classe III, um modelo básico, mas suficiente para esta etapa.",
+                "delay": 3000
               },
               {
                 "type": "give_item",
                 "keyword": "disco",
                 "name": "Disco de Identificação",
-                "description": "Disco de identificação padrão dos programas da Grade. Guarda informações sobre identificação, diretriz, funções, conquistas e histórico de seu titular.",
+                "description": "Disco de Identificação Classe III. Guarda toda sua informação como programa da Grade, como identificação, permissões, diretrizes, funções, conquistas e histórico de atividades.",
                 "pickupPermission": "none",
                 "dropPermission": "none"
               },
               {
                 "type": "broadcast",
-                "message": "Agora retorne ao Guardião do portal. Adeus."
+                "message": "E programa, lembre-se, não haverá uma terceira chance. Você e seu disco são um só. Quem perde o disco perde a si mesmo. Jamais esqueça isso!",
+                "delay": 3000
+              },
+              {
+                "type": "broadcast",
+                "message": "Agora retorne ao Guardião do Portal. Adeus. EOM"
               }
             ]
           }

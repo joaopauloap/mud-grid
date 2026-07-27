@@ -49,7 +49,7 @@ export const command = {
                     }
 
                     if (!dbUser) {
-                        player.socket.write(`\nUsuário '${identifier}' não encontrado.\r\n\n`);
+                        player.socket.write(`\'${identifier}' não encontrado.\r\n\n`);
                         return;
                     }
 
@@ -71,7 +71,7 @@ export const command = {
                         : "Inventário vazio.";
                 }
 
-                player.socket.write(`\nInformações do Usuário (${status}):\r\nID: ${userId}\r\nNome: ${userName}\r\nCoordenadas: (${x}, ${y})\r\n\r\nInventário:\r\n${invText}\r\n\n`);
+                player.socket.write(`\nInformações de (${status}):\r\nID: ${userId}\r\nNome: ${userName}\r\nCoordenadas: (${x}, ${y})\r\n\r\nInventário:\r\n${invText}\r\n\n`);
             } else if (type === "item" || type === "objeto" || type === "obj") {
                 const objects = await getAllWorldObjects();
                 const users = await getAllUsers();

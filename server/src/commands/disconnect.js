@@ -28,12 +28,12 @@ export const command = {
 
         const targetPlayer = getAuthenticatedPlayer(player.serverPlayers, args[1]);
         if (!targetPlayer) {
-            player.socket.write(`\nUsuário '${args[1]}' não encontrado ou não está conectado.\r\n\n`);
+            player.socket.write(`\'${args[1]}' não encontrado ou não está conectado.\r\n\n`);
             return;
         }
 
         targetPlayer.socket.write(`\n[Sistema]: Você foi desconectado.\r\n\n`);
         targetPlayer.socket.end();
-        player.socket.write(`\nUsuário '${args[1]}' desconectado.\r\n\n`);
+        player.socket.write(`\'${args[1]}' desconectado.\r\n\n`);
     }
 };

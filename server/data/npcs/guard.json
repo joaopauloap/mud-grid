@@ -7,7 +7,7 @@
     "nodes": [
       {
         "trigger": "oi",
-        "response": "Encontre CLU no setor 0-1 ao */norte* e requisite um novo 'Disco'.",
+        "response": "Encontre CLU no setor 0-1 ao */norte* e requisite um novo 'disco'.",
         "flags": "greeting,goodbye"
       },
       {

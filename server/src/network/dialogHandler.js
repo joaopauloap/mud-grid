@@ -6,7 +6,7 @@ import { GameService } from "../services/gameService.js";
 /**
  * Palavras de saudação usadas para detectar início de diálogo.
  */
-const GREETING_WORDS = ['oi', 'ola', 'olá', 'saudações', 'saudacoes', 'hi', 'hello', 'greetings'];
+const GREETING_WORDS = ['oi', 'alo', 'ola', 'olá', 'ei', 'saudações', 'saudacoes', 'hey', 'hi', 'hello', 'greetings'];
 
 /** Aguarda um número de milissegundos. */
 const delay = ms => new Promise(res => setTimeout(res, ms));
@@ -73,7 +73,7 @@ function broadcastNpcMessage(npcName, message, location, playersMap, playerName)
  */
 function sendPrivateNpcMessage(player, npcName, message) {
     if (player.socket && !player.socket.destroyed) {
-        player.socket.write(`\r\n   *${npcName}_NPC ${message}*\r\n`);
+        player.socket.write(`\r\n  *${npcName}_NPC ${message}*\r\n`);
     }
 }
 
@@ -126,9 +126,9 @@ async function evaluateCondition(player, node) {
 /**
  * Tenta iniciar um diálogo em árvore com um NPC.
  * Detecta: saudação + nome do NPC estando na mesma sala.
- * O nó raiz da árvore cujo trigger casa com a saudação é usado como entrada.
- * Quando há múltiplos nós raiz com o mesmo trigger, avalia condições para
- * escolher o mais específico (condição atendida > sem condição > condição não atendida).
+ * Usa todos os nós raiz com flag "greeting" como entrada, avaliando condições
+ * para escolher o mais específico (condição atendida > sem condição > condição não atendida).
+ * O trigger do nó é ignorado para nós greeting — qualquer palavra de GREETING_WORDS o ativa.
  */
 async function tryStartDialog(player, input) {
     if (!player.location) return false;
@@ -144,22 +144,14 @@ async function tryStartDialog(player, input) {
     const rootNodes = await game.getDialogRootNodes(tree.id);
     if (rootNodes.length === 0) return false;
 
-    const words = input.toLowerCase().split(/\s+/);
-    const matchedRoots = [];
-    for (const word of words) {
-        for (const root of rootNodes) {
-            if (word === root.trigger.toLowerCase()) {
-                matchedRoots.push(root);
-            }
-        }
-        if (matchedRoots.length > 0) break;
-    }
+    // Filtra apenas nós raiz com flag "greeting"
+    const greetingRoots = rootNodes.filter(r => r.hasFlag('greeting'));
+    if (greetingRoots.length === 0) return false;
 
-    if (matchedRoots.length === 0) return false;
-
+    // Seleciona o nó: condição atendida > sem condição > condição não atendida
     let matchedRoot = null;
     let fallbackRoot = null;
-    for (const root of matchedRoots) {
+    for (const root of greetingRoots) {
         if (!root.conditionType) {
             fallbackRoot = root;
         } else if (await evaluateCondition(player, root)) {
@@ -168,7 +160,7 @@ async function tryStartDialog(player, input) {
         }
     }
     if (!matchedRoot) matchedRoot = fallbackRoot;
-    if (!matchedRoot) matchedRoot = matchedRoots[0];
+    if (!matchedRoot) matchedRoot = greetingRoots[0];
 
     player.startDialog(npc.id, npc.name, matchedRoot.id, tree.id);
 
@@ -276,6 +268,14 @@ async function executeNodeActions(player, npcName, location, node) {
 
     for (const action of actions) {
         try {
+            // Delay opcional antes de executar a ação
+            if (action.delay) {
+                const ms = parseInt(action.delay, 10);
+                if (!isNaN(ms) && ms > 0) {
+                    await delay(ms);
+                }
+            }
+
             switch (action.type) {
                 case 'give_item': {
                     const item = {

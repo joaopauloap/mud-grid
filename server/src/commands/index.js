@@ -1,4 +1,6 @@
-﻿import { command as who } from "./who.js";
+﻿import { rolesCommand, roleCommand } from "./roles.js";
+import { descCommand, nodescCommand } from "./placename.js";
+import { command as who } from "./who.js";
 import { command as where } from "./where.js";
 import { command as look } from "./look.js";
 import { command as take } from "./take.js";
@@ -8,16 +10,17 @@ import { command as create } from "./create.js";
 import { command as inspect } from "./inspect.js";
 import { command as destroy } from "./destroy.js";
 import { command as disconnect } from "./disconnect.js";
-import { rolesCommand, roleCommand } from "./roles.js";
 import { command as move } from "./move.js";
 import { command as tp } from "./tp.js";
 import { command as motd } from "./motd.js";
-import { descCommand, nodescCommand } from "./placename.js";
 import { command as msg } from "./msg.js";
-import { command as usuarios } from "./users.js";
-import { command as objetos } from "./objects.js";
+import { command as users } from "./users.js";
+import { command as objects } from "./objects.js";
 import { command as npc } from "./npc.js";
 import { command as reseed } from "./reseed.js";
+import { command as exit } from "./exit.js";
+import { command as clear } from "./clear.js";
+import { command as ajuda } from "./help.js";
 import { hasRole } from "../game/index.js";
 
 // Mapa de comandos registrados
@@ -52,63 +55,13 @@ register(motd);
 register(descCommand);
 register(nodescCommand);
 register(msg);
-register(usuarios);
-register(objetos);
+register(users);
+register(objects);
 register(npc);
 register(reseed);
-
-// Comando especial para Sair
-register({
-    name: "sair",
-    aliases: ["/sair", "/exit", "/quit"],
-    async execute(player) {
-        player.socket.end();
-    }
-});
-
-// Comando especial para Limpar o Terminal usando sequências de escape ANSI
-register({
-    name: "limpar",
-    aliases: ["/limpar", "/clear", "/cls"],
-    async execute(player) {
-        // Envia as sequências de escape ANSI para limpar a tela e mover o cursor para o topo
-        player.socket.write("\x1B[2J\x1B[H");
-    }
-});
-
-// Comando para listar todos os comandos dinamicamente
-register({
-    name: "comandos",
-    aliases: ["/comandos", "/commands", "/ajuda", "/help"],
-    async execute(player) {
-        const uniqueCommands = Array.from(new Set(commandMap.values()));
-        const lines = [];
-
-        for (const cmd of uniqueCommands) {
-            // Se o comando tiver restrição de roles, checar se o jogador possui alguma delas
-            if (cmd.roles && cmd.roles.length > 0) {
-                let authorized = false;
-                for (const role of cmd.roles) {
-                    if (await hasRole(player.name, role)) {
-                        authorized = true;
-                        break;
-                    }
-                }
-                if (!authorized) continue;
-            }
-
-            const aliasesText = cmd.aliases && cmd.aliases.length > 0 
-                ? ` (${cmd.aliases.join(", ")})` 
-                : "";
-            lines.push(`- ${cmd.name}${aliasesText}`);
-        }
-
-        // Ordenar os comandos alfabeticamente para melhor visualização
-        lines.sort();
-
-        player.socket.write(`\nComandos disponíveis:\r\n${lines.join("\r\n")}\r\n\n`);
-    }
-});
+register(exit);
+register(clear);
+register(ajuda);
 
 export async function handleCommand(player, input, broadcast) {
     const trimmed = input.trim();

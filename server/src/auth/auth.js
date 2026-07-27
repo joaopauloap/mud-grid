@@ -11,13 +11,17 @@ export async function handleAuthLine(player, input, callbacks) {
     const { sendLine, sendPrompt, disconnectExistingUser, sendWelcome, broadcast, loadPlayerLocation } = callbacks;
 
     if (player.stage === 'awaiting_username') {
-        const username = input;
+        const username = input.trim();
+        if (!/^[a-zA-Z0-9]+$/.test(username)) {
+            sendLine(player.socket, `[Guard]: Apenas letras e números são permitidos. Identifique-se, programa!`);
+            sendPrompt(player.socket);
+            return;
+        }
         player.pendingUsername = username.toLowerCase();
         const exists = await game.userExists(username.toLowerCase());
         if (exists) {
             player.stage = 'awaiting_password_login';
-            sendLine(player.socket, `[Guard]: Um usuário da Grade...`);
-            sendLine(player.socket, `[Guard]: Qual sua senha então, usuário?`);
+            sendLine(player.socket, `[Guard]: Qual sua senha, programa?`);
             sendPrompt(player.socket);
         } else {
             player.stage = 'awaiting_username_confirmation';
@@ -41,14 +45,16 @@ export async function handleAuthLine(player, input, callbacks) {
             await delay(3000);
             sendLine(player.socket, `[Guard]: Não possui disco?`);
             await delay(3000);
-            sendLine(player.socket, `\r\n[Guard]: Programas errantes ou sem disco de identificação estão sujeitos ao desafio da Grade! Deverá provar a MasterControl que pode desempenhar suas diretivas corretamente, programa. Caso se classifique, será reintegrado ao sistema da Grade e receberá uma nova função. Do contrário, ou caso se recuse a obedecer, será submetido a destruição imediata.`);
+            sendLine(player.socket, `[Guard]: Por acaso não sabes que a perda do Disco de Identificação compromete a integridade do programa e pode resultar em corrupção?`);
             await delay(3000);
-            sendLine(player.socket, `\r\nInforme uma senha:`);
+            sendLine(player.socket, `[Guard]: Programas errantes estão sujeitos ao desafio da Grade! Deverá provar que pode desempenhar suas diretivas corretamente, programa. Caso se classifique, será reintegrado ao sistema da Grade e receberá uma nova função. Do contrário, ou caso se recuse a obedecer, será submetido a destruição imediata.`);
+            await delay(3000);
+            sendLine(player.socket, `\r\n\nInforme uma senha: `);
             sendPrompt(player.socket);
         } else {
             player.stage = 'awaiting_username';
             player.pendingUsername = null;
-            sendLine(player.socket, `[Guard]: Identifique-se, programa!`);
+            sendLine(player.socket, `[Guard]: Identifique - se, programa!`);
             sendPrompt(player.socket);
         }
         return;
@@ -59,7 +65,7 @@ export async function handleAuthLine(player, input, callbacks) {
         const ok = await game.authenticate(player.pendingUsername, password);
         if (!ok) {
             sendLine(player.socket, 'Acesso negado.');
-            sendLine(player.socket, `[Guard]: Identifique-se, programa!`);
+            sendLine(player.socket, `[Guard]: Identifique - se, programa!`);
             sendPrompt(player.socket);
             player.stage = 'awaiting_username';
             player.pendingUsername = null;
@@ -76,10 +82,10 @@ export async function handleAuthLine(player, input, callbacks) {
         try {
             await game.createUser(player.pendingUsername, password);
             await completeAuthentication(player, broadcast, loadPlayerLocation, sendWelcome, sendLine);
-            sendLine(player.socket, `[Guard]: Encontre CLU no setor 0-1 ao */norte* e requisite um novo 'Disco'.\r\n`);
+            sendLine(player.socket, `[Guard_NPC]: Encontre CLU no setor 0 - 1 ao */norte* e requisite um novo 'disco'.\r\n`);
         } catch (err) {
             sendLine(player.socket, `Erro ao registrar: ${err.message}`);
-            sendLine(player.socket, 'Digite seu nome de usuário:');
+            sendLine(player.socket, 'Digite seu nome:');
             sendPrompt(player.socket);
             player.stage = 'awaiting_username';
             player.pendingUsername = null;
