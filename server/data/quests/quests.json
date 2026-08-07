@@ -1,0 +1,9 @@
+[
+  {
+    "name": "disco_perdido",
+    "title": "Disco de Identificação Perdido",
+    "description": "Você perdeu seu Disco de Identificação. Encontre CLU no setor 0-1 e obtenha um novo disco.",
+    "objectives": "Falar com CLU e receber o Disco de Identificação.",
+    "requirements": []
+  }
+]

@@ -12,7 +12,7 @@
       },
       {
         "trigger": "oi",
-        "response": "Disco concedido e sincronizado. Deves enfrentar o desafio da Grade imediatamente. Me acompanhe.",
+        "response": "Disco concedido e sincronizado. Deverá enfrentar o desafio da Grade imediatamente. Me acompanhe.",
         "flags": "greeting,goodbye",
         "condition": {
           "type": "has_item",

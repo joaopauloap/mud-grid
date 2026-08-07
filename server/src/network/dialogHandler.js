@@ -115,8 +115,19 @@ async function evaluateCondition(player, node) {
             return await game.hasRole(player.name, node.conditionValue);
         }
         case 'quest_flag': {
-            // TODO: Integrar com sistema de quests futuramente
-            return false;
+            // conditionValue format: "quest_name:status" or "quest_name"
+            // status pode ser 'active' (padrão), 'completed', 'failed'
+            const parts = node.conditionValue.split(':');
+            const questName = parts[0].toLowerCase();
+            const requiredStatus = parts[1] || 'active';
+            if (requiredStatus === 'active') {
+                return await game.hasActiveQuest(player.name, questName);
+            } else if (requiredStatus === 'completed') {
+                return await game.hasCompletedQuest(player.name, questName);
+            } else {
+                const pq = await game.getPlayerQuest(player.name, questName);
+                return pq && pq.status === requiredStatus;
+            }
         }
         default:
             return true;
@@ -254,13 +265,17 @@ async function continueDialog(player, input) {
 /**
  * Executa as ações configuradas em um nó de diálogo após ele ser ativado.
  * Tipos de ação suportados:
- *   give_item   → adiciona item ao inventário do jogador
- *   remove_item → remove item do inventário do jogador
- *   teleport    → teletransporta o jogador para (x,y)
- *   set_flag    → (reservado para sistema de quests)
- *   broadcast   → envia mensagem para todos na mesma sala
- *   command     → executa um comando administrativo (ex: "create espada 0,0")
- *   delay       → aguarda N milissegundos antes da próxima ação
+ *   give_item      → adiciona item ao inventário do jogador
+ *   remove_item    → remove item do inventário do jogador
+ *   teleport       → teletransporta o jogador para (x,y)
+ *   broadcast      → envia mensagem para todos na mesma sala
+ *   command        → executa um comando administrativo (ex: "create espada 0,0")
+ *   quest_start    → atribui uma quest ao jogador (action.quest)
+ *   quest_complete → marca uma quest como completa (action.quest)
+ *   quest_fail     → marca uma quest como falha (action.quest)
+ *   quest_progress → atualiza o progresso JSON de uma quest (action.quest, action.key, action.value)
+ *
+ * Qualquer ação pode ter um parâmetro `delay` (ms) para aguardar antes de executá-la.
  */
 async function executeNodeActions(player, npcName, location, node) {
     const actions = node.getActions();
@@ -329,6 +344,45 @@ async function executeNodeActions(player, npcName, location, node) {
                     // Executa um comando como se fosse digitado no console do servidor
                     // ou via sistema de comandos internos — por ora apenas log
                     console.log(`[Dialog Action] Comando: ${action.cmd}`);
+                    break;
+                }
+                case 'quest_start': {
+                    const qName = action.quest;
+                    if (qName) {
+                        const assigned = await game.assignQuest(player.name, qName);
+                        if (assigned) {
+                            sendPrivateNpcMessage(player, npcName, `Nova diretriz registrada: '${qName}'`);
+                        }
+                    }
+                    break;
+                }
+                case 'quest_complete': {
+                    const qcName = action.quest;
+                    if (qcName) {
+                        const completed = await game.completeQuest(player.name, qcName);
+                        if (completed) {
+                            sendPrivateNpcMessage(player, npcName, `Diretriz cumprida: '${qcName}'`);
+                        }
+                    }
+                    break;
+                }
+                case 'quest_fail': {
+                    const qfName = action.quest;
+                    if (qfName) {
+                        await game.failQuest(player.name, qfName);
+                        sendPrivateNpcMessage(player, npcName, `Diretriz cancelada: '${qfName}'`);
+                    }
+                    break;
+                }
+                case 'quest_progress': {
+                    const qpName = action.quest;
+                    if (qpName && action.key) {
+                        const pq = await game.getPlayerQuest(player.name, qpName);
+                        if (pq) {
+                            pq.setProgressKey(action.key, action.value);
+                            await game.updateQuestProgress(player.name, qpName, pq.progress);
+                        }
+                    }
                     break;
                 }
             }

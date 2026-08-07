@@ -177,6 +177,18 @@ export async function init() {
         await run(`ALTER TABLE dialog_nodes ADD COLUMN action_commands TEXT DEFAULT '[]'`);
     }
 
+    // --- Sistema de Quests ---
+    await run(`CREATE TABLE IF NOT EXISTS player_quests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL,
+        quest_name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        progress TEXT DEFAULT '{}',
+        started_at TEXT DEFAULT (datetime('now', 'localtime')),
+        completed_at TEXT,
+        UNIQUE(username, quest_name)
+    )`);
+
     await run(`INSERT INTO roles (name) VALUES ('user') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('mod') ON CONFLICT(name) DO NOTHING`);
     await run(`INSERT INTO roles (name) VALUES ('admin') ON CONFLICT(name) DO NOTHING`);

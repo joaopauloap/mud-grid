@@ -1,2 +1,4 @@
 Implementar:
+    -Sistema de Quests
+    -Comando para aparencia do player
     -Mapa em ascii

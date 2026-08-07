@@ -21,6 +21,7 @@ import { command as reseed } from "./reseed.js";
 import { command as exit } from "./exit.js";
 import { command as clear } from "./clear.js";
 import { command as ajuda } from "./help.js";
+import { command as quest } from "./quest.js";
 import { hasRole } from "../game/index.js";
 
 // Mapa de comandos registrados
@@ -62,6 +63,7 @@ register(reseed);
 register(exit);
 register(clear);
 register(ajuda);
+register(quest);
 
 export async function handleCommand(player, input, broadcast) {
     const trimmed = input.trim();

@@ -7,6 +7,7 @@ import { RoleRepository } from "../repositories/roleRepository.js";
 import { NpcRepository } from "../repositories/npcRepository.js";
 import { DialogTreeRepository } from "../repositories/dialogTreeRepository.js";
 import { AuthService } from "../services/authService.js";
+import { QuestRepository } from "../repositories/questRepository.js";
 
 const NPC_DATA_DIR = path.resolve(process.cwd(), "data", "npcs");
 const PLACES_DATA_DIR = path.resolve(process.cwd(), "data", "places");
@@ -419,4 +420,46 @@ export async function reseed() {
     await seedNpcsFromJson(true);
     console.log("[reseed] Reseed concluído.");
     // Nota: após reseed, chame initWorld() do map/index.js para recarregar em memória
+}
+
+// --- Quest Functions ---
+
+export async function getPlayerQuests(username) {
+    return await QuestRepository.getPlayerQuests(username);
+}
+
+export async function getPlayerQuest(username, questName) {
+    return await QuestRepository.getPlayerQuest(username, questName);
+}
+
+export async function assignQuest(username, questName) {
+    return await QuestRepository.assignQuest(username, questName);
+}
+
+export async function completeQuest(username, questName) {
+    return await QuestRepository.completeQuest(username, questName);
+}
+
+export async function failQuest(username, questName) {
+    return await QuestRepository.failQuest(username, questName);
+}
+
+export async function removeQuest(username, questName) {
+    return await QuestRepository.removeQuest(username, questName);
+}
+
+export async function updateQuestProgress(username, questName, progressJson) {
+    return await QuestRepository.updateQuestProgress(username, questName, progressJson);
+}
+
+export async function getActiveQuests(username) {
+    return await QuestRepository.getActiveQuests(username);
+}
+
+export async function hasActiveQuest(username, questName) {
+    return await QuestRepository.hasActiveQuest(username, questName);
+}
+
+export async function hasCompletedQuest(username, questName) {
+    return await QuestRepository.hasCompletedQuest(username, questName);
 }

@@ -18,7 +18,7 @@ export const command = {
         );
 
         if (!isAdmin && !isMod && !hasMapItem) {
-            player.socket.write(`\nVocê não possui um mapa para saber sua localização.\r\n\n`);
+            player.socket.write(`\nVocê não possui mapa para se localizar.\r\n\n`);
             return;
         }
 
